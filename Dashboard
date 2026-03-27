@@ -1,0 +1,73 @@
+import os
+import pandas as pd
+import plotly.graph_objects as go
+from dash import Dash, dcc, html, Input, Output
+
+# Load available tickers from your stock_data folder
+DATA_DIR = "stock_data"
+TICKERS = [f.split("_")[0] for f in os.listdir(DATA_DIR) if f.endswith(".csv")]
+
+def load_data(ticker):
+    path = f"{DATA_DIR}/{ticker}_historical.csv"
+    df = pd.read_csv(path)
+    df['DATE'] = pd.to_datetime(df['DATE'])
+    return df
+
+app = Dash(__name__)
+
+app.layout = html.Div([
+    html.H1("Market Data Dashboard", style={'textAlign': 'center'}),
+
+    html.Div([
+        html.Label("Select Ticker"),
+        dcc.Dropdown(TICKERS, TICKERS[0], id='ticker-dropdown')
+    ], style={'width': '30%', 'display': 'inline-block'}),
+
+    html.Div([
+        html.Label("Select Date Range"),
+        dcc.DatePickerRange(id='date-range')
+    ], style={'width': '40%', 'display': 'inline-block', 'paddingLeft': '20px'}),
+
+    dcc.Graph(id='price-chart'),
+    dcc.Graph(id='volume-chart'),
+])
+
+@app.callback(
+    [Output('price-chart', 'figure'),
+     Output('volume-chart', 'figure'),
+     Output('date-range', 'start_date'),
+     Output('date-range', 'end_date')],
+    [Input('ticker-dropdown', 'value'),
+     Input('date-range', 'start_date'),
+     Input('date-range', 'end_date')]
+)
+def update_dashboard(ticker, start_date, end_date):
+    df = load_data(ticker)
+
+    if start_date is None:
+        start_date = df['DATE'].min()
+    if end_date is None:
+        end_date = df['DATE'].max()
+
+    df = df[(df['DATE'] >= start_date) & (df['DATE'] <= end_date)]
+
+    # Moving averages
+    df['MA20'] = df['CLOSE'].rolling(20).mean()
+    df['MA50'] = df['CLOSE'].rolling(50).mean()
+
+    # Price chart
+    price_fig = go.Figure()
+    price_fig.add_trace(go.Scatter(x=df['DATE'], y=df['CLOSE'], name='Close'))
+    price_fig.add_trace(go.Scatter(x=df['DATE'], y=df['MA20'], name='MA 20'))
+    price_fig.add_trace(go.Scatter(x=df['DATE'], y=df['MA50'], name='MA 50'))
+    price_fig.update_layout(title=f"{ticker} Price & Moving Averages")
+
+    # Volume chart
+    volume_fig = go.Figure()
+    volume_fig.add_trace(go.Bar(x=df['DATE'], y=df['VOLUME'], name='Volume'))
+    volume_fig.update_layout(title=f"{ticker} Volume")
+
+    return price_fig, volume_fig, start_date, end_date
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
