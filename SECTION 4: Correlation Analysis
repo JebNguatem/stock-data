@@ -1,0 +1,459 @@
+"""
+Stock Data Analysis & Insights Engine - FIXED VERSION
+"""
+
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import os
+import logging
+from datetime import datetime
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+os.makedirs('analysis', exist_ok=True)
+os.makedirs('reports', exist_ok=True)
+
+def load_all_csv_data(data_dir='stock_data'):
+    """Load all CSV files from stock_data directory"""
+    data_dict = {}
+    
+    if not os.path.exists(data_dir):
+        logger.error(f"Directory {data_dir} not found")
+        return data_dict
+    
+    for filename in os.listdir(data_dir):
+        if filename.endswith('_historical.csv'):
+            ticker = filename.replace('_historical.csv', '')
+            filepath = os.path.join(data_dir, filename)
+            
+            try:
+                df = pd.read_csv(filepath)
+                df.columns = df.columns.str.upper().str.strip()
+                
+                if 'DATE' in df.columns:
+                    df['DATE'] = pd.to_datetime(df['DATE'])
+                    df = df.sort_values('DATE')
+                
+                if 'ADJ CLOSE' in df.columns and 'CLOSE' not in df.columns:
+                    df['CLOSE'] = df['ADJ CLOSE']
+                
+                numeric_cols = ['OPEN', 'HIGH', 'LOW', 'CLOSE', 'ADJ CLOSE', 'VOLUME']
+                for col in numeric_cols:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                
+                df = df.dropna(subset=['CLOSE'])
+                data_dict[ticker] = df
+                logger.info(f"Loaded {ticker}: {len(df)} records")
+                
+            except Exception as e:
+                logger.error(f"Error loading {filename}: {e}")
+    
+    return data_dict
+
+def calculate_daily_returns(data_dict):
+    """Calculate daily returns for all tickers"""
+    returns_dict = {}
+    
+    for ticker, df in data_dict.items():
+        returns_dict[ticker] = df['CLOSE'].pct_change() * 100
+    
+    returns_df = pd.DataFrame(returns_dict)
+    return returns_df
+
+def calculate_volatility(returns_df):
+    """Calculate volatility (standard deviation of daily returns)"""
+    volatility = returns_df.std()
+    volatility = volatility.sort_values(ascending=False)
+    return volatility
+
+def calculate_sharpe_ratio(returns_df, risk_free_rate=0.02):
+    """Calculate Sharpe ratio (risk-adjusted return)"""
+    mean_return = returns_df.mean() * 252
+    std_return = returns_df.std() * np.sqrt(252)
+    
+    sharpe_ratio = (mean_return - risk_free_rate) / std_return
+    sharpe_ratio = sharpe_ratio.sort_values(ascending=False)
+    
+    return sharpe_ratio
+
+def calculate_correlation_matrix(returns_df):
+    """Calculate correlation matrix"""
+    correlation = returns_df.corr()
+    return correlation
+
+def calculate_rolling_averages(data_dict):
+    """Calculate 50-day and 200-day moving averages - FIXED"""
+    ma_dict = {}
+    
+    for ticker, df in data_dict.items():
+        try:
+            # Create a proper copy
+            df_copy = df[['DATE', 'CLOSE']].copy()
+            
+            # Ensure CLOSE is numeric
+            df_copy['CLOSE'] = pd.to_numeric(df_copy['CLOSE'], errors='coerce')
+            
+            # Calculate moving averages
+            df_copy['MA_50'] = df_copy['CLOSE'].rolling(window=50).mean()
+            df_copy['MA_200'] = df_copy['CLOSE'].rolling(window=200).mean()
+            
+            ma_dict[ticker] = df_copy
+            logger.info(f"Calculated MAs for {ticker}")
+            
+        except Exception as e:
+            logger.error(f"Error calculating MAs for {ticker}: {e}")
+    
+    return ma_dict
+
+def identify_top_stocks(volatility, n=3):
+    """Identify top N most volatile and most stable stocks"""
+    most_volatile = volatility.head(n)
+    most_stable = volatility.tail(n)
+    
+    return most_volatile, most_stable
+
+def generate_insights_report(data_dict, returns_df, volatility, sharpe_ratio, correlation):
+    """Generate comprehensive insights report"""
+    report = []
+    report.append("="*80)
+    report.append("STOCK ANALYSIS INSIGHTS REPORT")
+    report.append("="*80)
+    report.append(f"\nGenerated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    
+    # Top 3 Most Volatile Stocks
+    report.append("\n" + "="*80)
+    report.append("TOP 3 MOST VOLATILE STOCKS")
+    report.append("="*80)
+    most_vol, most_stable = identify_top_stocks(volatility, n=3)
+    
+    for i, (ticker, vol) in enumerate(most_vol.items(), 1):
+        report.append(f"\n{i}. {ticker}: {vol:.2f}% daily volatility")
+        report.append(f"   → Higher risk, higher potential reward")
+    
+    # Top 3 Most Stable Stocks
+    report.append("\n" + "="*80)
+    report.append("TOP 3 MOST STABLE STOCKS")
+    report.append("="*80)
+    
+    for i, (ticker, vol) in enumerate(most_stable.items(), 1):
+        report.append(f"\n{i}. {ticker}: {vol:.2f}% daily volatility")
+        report.append(f"   → Lower risk, more predictable movements")
+    
+    # Sharpe Ratios
+    report.append("\n" + "="*80)
+    report.append("SHARPE RATIOS (Risk-Adjusted Returns)")
+    report.append("="*80)
+    report.append("\nHigher = Better risk-adjusted returns:\n")
+    
+    for ticker, sr in sharpe_ratio.items():
+        report.append(f"{ticker}: {sr:.4f}")
+    
+    # Daily Returns Analysis
+    report.append("\n" + "="*80)
+    report.append("DAILY RETURNS ANALYSIS")
+    report.append("="*80)
+    report.append(f"\nAverage Daily Returns (%):\n")
+    
+    avg_returns = returns_df.mean()
+    for ticker, ret in avg_returns.sort_values(ascending=False).items():
+        report.append(f"{ticker}: {ret:+.4f}%")
+    
+    # Correlation Analysis
+    report.append("\n" + "="*80)
+    report.append("CORRELATION MATRIX (How stocks move together)")
+    report.append("="*80)
+    report.append("\n1.0 = Perfect positive (move together)")
+    report.append("-1.0 = Perfect negative (move opposite)")
+    report.append("0.0 = No correlation\n")
+    
+    report.append(correlation.to_string())
+    
+    # Strongest Correlations
+    report.append("\n\nSTRONGEST POSITIVE CORRELATIONS:\n")
+    
+    corr_pairs = []
+    for i in range(len(correlation.columns)):
+        for j in range(i+1, len(correlation.columns)):
+            ticker1 = correlation.columns[i]
+            ticker2 = correlation.columns[j]
+            corr_value = correlation.iloc[i, j]
+            corr_pairs.append((ticker1, ticker2, corr_value))
+    
+    corr_pairs.sort(key=lambda x: x[2], reverse=True)
+    
+    for ticker1, ticker2, corr_value in corr_pairs[:5]:
+        report.append(f"{ticker1} <-> {ticker2}: {corr_value:.4f}")
+    
+    report_text = "\n".join(report)
+    
+    report_path = 'reports/insights_report.txt'
+    with open(report_path, 'w') as f:
+        f.write(report_text)
+    
+    logger.info(f"Saved insights report to {report_path}")
+    return report_text
+
+def plot_volatility_chart(volatility):
+    """Plot volatility comparison chart"""
+    fig = go.Figure()
+    
+    fig.add_trace(go.Bar(
+        x=volatility.index,
+        y=volatility.values,
+        marker=dict(
+            color=volatility.values,
+            colorscale='Reds',
+            showscale=True,
+            colorbar=dict(title="Volatility (%)")
+        ),
+        text=[f"{v:.2f}%" for v in volatility.values],
+        textposition='auto'
+    ))
+    
+    fig.update_layout(
+        title='Stock Volatility Comparison (Daily %)',
+        xaxis_title='Ticker',
+        yaxis_title='Volatility (%)',
+        template='plotly_white',
+        height=600
+    )
+    
+    output_path = 'analysis/volatility_comparison.html'
+    fig.write_html(output_path)
+    logger.info(f"Saved: {output_path}")
+
+def plot_correlation_heatmap(correlation):
+    """Plot correlation matrix heatmap"""
+    fig = go.Figure(data=go.Heatmap(
+        z=correlation.values,
+        x=correlation.columns,
+        y=correlation.columns,
+        colorscale='RdBu',
+        zmid=0,
+        text=correlation.values.round(3),
+        texttemplate='%{text}',
+        textfont={"size": 9}
+    ))
+    
+    fig.update_layout(
+        title='Correlation Matrix Heatmap',
+        xaxis_title='Ticker',
+        yaxis_title='Ticker',
+        template='plotly_white',
+        height=700,
+        width=800
+    )
+    
+    output_path = 'analysis/correlation_heatmap.html'
+    fig.write_html(output_path)
+    logger.info(f"Saved: {output_path}")
+
+def plot_sharpe_ratios(sharpe_ratio):
+    """Plot Sharpe ratio comparison"""
+    fig = go.Figure()
+    
+    colors = ['green' if x > 0 else 'red' for x in sharpe_ratio.values]
+    
+    fig.add_trace(go.Bar(
+        x=sharpe_ratio.index,
+        y=sharpe_ratio.values,
+        marker=dict(color=colors),
+        text=[f"{v:.3f}" for v in sharpe_ratio.values],
+        textposition='auto'
+    ))
+    
+    fig.update_layout(
+        title='Sharpe Ratio Comparison (Risk-Adjusted Returns)',
+        xaxis_title='Ticker',
+        yaxis_title='Sharpe Ratio',
+        template='plotly_white',
+        height=600,
+        hovermode='x unified'
+    )
+    
+    fig.add_hline(y=0, line_dash="dash", line_color="black")
+    
+    output_path = 'analysis/sharpe_ratio_comparison.html'
+    fig.write_html(output_path)
+    logger.info(f"Saved: {output_path}")
+
+def plot_daily_returns_distribution(returns_df):
+    """Plot distribution of daily returns"""
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=[f"{ticker}" for ticker in returns_df.columns[:4]]
+    )
+    
+    tickers = returns_df.columns[:4]
+    
+    for idx, ticker in enumerate(tickers):
+        row = idx // 2 + 1
+        col = idx % 2 + 1
+        
+        fig.add_trace(
+            go.Histogram(x=returns_df[ticker], name=ticker, nbinsx=50),
+            row=row, col=col
+        )
+    
+    fig.update_layout(
+        title='Daily Returns Distribution (First 4 Tickers)',
+        height=800,
+        showlegend=False,
+        template='plotly_white'
+    )
+    
+    output_path = 'analysis/returns_distribution.html'
+    fig.write_html(output_path)
+    logger.info(f"Saved: {output_path}")
+
+def plot_rolling_averages(ma_dict):
+    """Plot rolling averages for each ticker"""
+    for ticker, df in list(ma_dict.items())[:3]:
+        try:
+            df_clean = df.dropna()
+            
+            if df_clean.empty:
+                logger.warning(f"No clean data for {ticker}")
+                continue
+            
+            fig = go.Figure()
+            
+            fig.add_trace(go.Scatter(x=df_clean['DATE'], y=df_clean['CLOSE'], 
+                                    mode='lines', name='Close Price', line=dict(color='black', width=1)))
+            fig.add_trace(go.Scatter(x=df_clean['DATE'], y=df_clean['MA_50'], 
+                                    mode='lines', name='50-Day MA', line=dict(color='blue', width=2)))
+            fig.add_trace(go.Scatter(x=df_clean['DATE'], y=df_clean['MA_200'], 
+                                    mode='lines', name='200-Day MA', line=dict(color='red', width=2)))
+            
+            fig.update_layout(
+                title=f'{ticker} - Price with 50-Day & 200-Day MAs',
+                xaxis_title='Date',
+                yaxis_title='Price ($)',
+                template='plotly_white',
+                height=600,
+                hovermode='x unified'
+            )
+            
+            output_path = f'analysis/{ticker}_moving_averages_analysis.html'
+            fig.write_html(output_path)
+            logger.info(f"Saved: {output_path}")
+        
+        except Exception as e:
+            logger.error(f"Error plotting MAs for {ticker}: {e}")
+
+def create_summary_table(volatility, sharpe_ratio, returns_df):
+    """Create summary statistics table"""
+    summary_data = {
+        'Ticker': volatility.index,
+        'Volatility (%)': volatility.values.round(2),
+        'Sharpe Ratio': [sharpe_ratio.get(t, np.nan) for t in volatility.index],
+        'Avg Daily Return (%)': [returns_df[t].mean() for t in volatility.index]
+    }
+    
+    summary_df = pd.DataFrame(summary_data)
+    summary_df = summary_df.sort_values('Sharpe Ratio', ascending=False)
+    
+    html = """
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 12px;
+                text-align: left;
+            }
+            th {
+                background-color: #4CAF50;
+                color: white;
+            }
+            tr:nth-child(even) {
+                background-color: #f2f2f2;
+            }
+            tr:hover {
+                background-color: #ddd;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Stock Analysis Summary Table</h1>
+        <p>Generated: """ + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + """</p>
+    """
+    
+    html += summary_df.to_html(index=False)
+    html += "</body></html>"
+    
+    output_path = 'analysis/summary_table.html'
+    with open(output_path, 'w') as f:
+        f.write(html)
+    
+    logger.info(f"Saved: {output_path}")
+    return summary_df
+
+def main():
+    """Main execution"""
+    print("\n" + "="*80)
+    print("STOCK ANALYSIS & INSIGHTS ENGINE")
+    print("="*80)
+    
+    print("\n[1/6] Loading stock data...")
+    data_dict = load_all_csv_data('stock_data')
+    
+    if not data_dict:
+        print("ERROR: No stock data found.")
+        return
+    
+    print(f"✓ Loaded {len(data_dict)} tickers")
+    
+    print("\n[2/6] Calculating daily returns...")
+    returns_df = calculate_daily_returns(data_dict)
+    print(f"✓ Calculated returns")
+    
+    print("\n[3/6] Calculating volatility...")
+    volatility = calculate_volatility(returns_df)
+    print(f"✓ Most Volatile: {volatility.index[0]} ({volatility.values[0]:.2f}%)")
+    print(f"✓ Most Stable: {volatility.index[-1]} ({volatility.values[-1]:.2f}%)")
+    
+    print("\n[4/6] Calculating Sharpe ratios...")
+    sharpe_ratio = calculate_sharpe_ratio(returns_df)
+    print(f"✓ Best Risk-Adjusted: {sharpe_ratio.index[0]} ({sharpe_ratio.values[0]:.4f})")
+    
+    print("\n[5/6] Calculating correlation matrix...")
+    correlation = calculate_correlation_matrix(returns_df)
+    print(f"✓ Correlation matrix complete")
+    
+    print("\n[6/6] Calculating rolling averages...")
+    ma_dict = calculate_rolling_averages(data_dict)
+    print(f"✓ Calculated MAs for {len(ma_dict)} tickers")
+    
+    print("\nGenerating insights report...")
+    report = generate_insights_report(data_dict, returns_df, volatility, sharpe_ratio, correlation)
+    print(report)
+    
+    print("\n" + "-"*80)
+    print("Creating visualizations...")
+    print("-"*80)
+    
+    plot_volatility_chart(volatility)
+    plot_correlation_heatmap(correlation)
+    plot_sharpe_ratios(sharpe_ratio)
+    plot_daily_returns_distribution(returns_df)
+    plot_rolling_averages(ma_dict)
+    create_summary_table(volatility, sharpe_ratio, returns_df)
+    
+    print("\n" + "="*80)
+    print("✓ ANALYSIS COMPLETE!")
+    print("="*80)
+    print(f"\n📊 Files saved to: analysis/ & reports/")
+    print("="*80 + "\n")
+
+if __name__ == '__main__':
+    main()
