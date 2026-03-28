@@ -1,0 +1,268 @@
+"""
+Complete Stock Data Downloader & Visualizer for Kaggle
+Downloads historical data and creates interactive visualizations
+"""
+
+import yfinance as yf
+import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import time
+import os
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Tickers to download
+TICKERS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'SPY', 'QQQ']
+
+# Create output directories
+os.makedirs('stock_data', exist_ok=True)
+os.makedirs('visualizations', exist_ok=True)
+
+def download_stock_data(tickers, start_date='2023-01-01', end_date=None):
+    """Download stock data from yfinance with retry logic"""
+    if end_date is None:
+        end_date = datetime.now().strftime('%Y-%m-%d')
+    
+    downloaded_files = {}
+    
+    for ticker in tickers:
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                logger.info(f'Downloading {ticker} (attempt {attempt + 1}/{max_retries})')
+                
+                # Download data
+                data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+                
+                if data.empty:
+                    logger.warning(f'No data returned for {ticker}')
+                    continue
+                
+                # Reset index to make Date a column
+                data.reset_index(inplace=True)
+                
+                # Save to CSV in stock_data folder
+                csv_path = f'stock_data/{ticker}_historical.csv'
+                data.to_csv(csv_path, index=False)
+                logger.info(f'Saved {ticker} to {csv_path}')
+                
+                downloaded_files[ticker] = csv_path
+                time.sleep(1)  # Rate limiting
+                break
+                
+            except Exception as e:
+                logger.error(f'Error downloading {ticker}: {e}')
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+        
+        if ticker not in downloaded_files:
+            logger.error(f'Failed to download {ticker} after {max_retries} attempts')
+    
+    return downloaded_files
+
+def load_csv_data(csv_path):
+    """Load and standardize CSV data"""
+    try:
+        df = pd.read_csv(csv_path)
+        
+        # Standardize column names
+        df.columns = df.columns.str.upper().str.strip()
+        
+        # Ensure Date column
+        if 'DATE' in df.columns:
+            df['DATE'] = pd.to_datetime(df['DATE'])
+        
+        # Handle 'ADJ CLOSE' -> 'CLOSE'
+        if 'ADJ CLOSE' in df.columns and 'CLOSE' not in df.columns:
+            df['CLOSE'] = df['ADJ CLOSE']
+        
+        # Convert numeric columns to float
+        numeric_cols = ['OPEN', 'HIGH', 'LOW', 'CLOSE', 'ADJ CLOSE', 'VOLUME']
+        for col in numeric_cols:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        # Drop rows with NaN values in CLOSE
+        df = df.dropna(subset=['CLOSE'])
+        
+        return df
+        
+    except Exception as e:
+        logger.error(f'Error loading {csv_path}: {e}')
+        return None
+
+def plot_price_trend(df, ticker):
+    """Plot price trend"""
+    if df is None or 'CLOSE' not in df.columns or 'DATE' not in df.columns:
+        logger.warning(f'Cannot plot price trend for {ticker}')
+        return
+    
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df['DATE'], y=df['CLOSE'], mode='lines', name='Close Price'))
+    fig.update_layout(
+        title=f'{ticker} Price Trend',
+        xaxis_title='Date',
+        yaxis_title='Price ($)',
+        hovermode='x unified',
+        template='plotly_white'
+    )
+    
+    output_path = f'visualizations/{ticker}_price_trend.html'
+    fig.write_html(output_path)
+    logger.info(f'Saved: {output_path}')
+
+def plot_candlestick(df, ticker):
+    """Plot candlestick chart"""
+    required = ['OPEN', 'HIGH', 'LOW', 'CLOSE', 'DATE']
+    if df is None or not all(col in df.columns for col in required):
+        logger.warning(f'Cannot plot candlestick for {ticker}')
+        return
+    
+    fig = go.Figure(data=[go.Candlestick(
+        x=df['DATE'],
+        open=df['OPEN'],
+        high=df['HIGH'],
+        low=df['LOW'],
+        close=df['CLOSE']
+    )])
+    fig.update_layout(
+        title=f'{ticker} Candlestick Chart',
+        xaxis_title='Date',
+        yaxis_title='Price ($)',
+        template='plotly_white'
+    )
+    
+    output_path = f'visualizations/{ticker}_candlestick.html'
+    fig.write_html(output_path)
+    logger.info(f'Saved: {output_path}')
+
+def plot_volume(df, ticker):
+    """Plot volume chart"""
+    if df is None or 'VOLUME' not in df.columns or 'DATE' not in df.columns:
+        logger.warning(f'Cannot plot volume for {ticker}')
+        return
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=df['DATE'], y=df['VOLUME'], marker=dict(color='steelblue')))
+    fig.update_layout(
+        title=f'{ticker} Trading Volume',
+        xaxis_title='Date',
+        yaxis_title='Volume',
+        template='plotly_white'
+    )
+    
+    output_path = f'visualizations/{ticker}_volume.html'
+    fig.write_html(output_path)
+    logger.info(f'Saved: {output_path}')
+
+def plot_moving_averages(df, ticker, ma_short=20, ma_long=50):
+    """Plot price with moving averages"""
+    if df is None or 'CLOSE' not in df.columns or 'DATE' not in df.columns:
+        logger.warning(f'Cannot plot MA for {ticker}')
+        return
+    
+    df_copy = df.copy()
+    
+    # Ensure CLOSE is numeric
+    df_copy['CLOSE'] = pd.to_numeric(df_copy['CLOSE'], errors='coerce')
+    df_copy = df_copy.dropna(subset=['CLOSE'])
+    
+    df_copy['MA_SHORT'] = df_copy['CLOSE'].rolling(window=ma_short).mean()
+    df_copy['MA_LONG'] = df_copy['CLOSE'].rolling(window=ma_long).mean()
+    
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df_copy['DATE'], y=df_copy['CLOSE'], mode='lines', name='Close'))
+    fig.add_trace(go.Scatter(x=df_copy['DATE'], y=df_copy['MA_SHORT'], mode='lines', name=f'SMA {ma_short}'))
+    fig.add_trace(go.Scatter(x=df_copy['DATE'], y=df_copy['MA_LONG'], mode='lines', name=f'SMA {ma_long}'))
+    fig.update_layout(
+        title=f'{ticker} Moving Averages',
+        xaxis_title='Date',
+        yaxis_title='Price ($)',
+        hovermode='x unified',
+        template='plotly_white'
+    )
+    
+    output_path = f'visualizations/{ticker}_moving_averages.html'
+    fig.write_html(output_path)
+    logger.info(f'Saved: {output_path}')
+
+def plot_technical_analysis(df, ticker):
+    """Plot technical analysis dashboard"""
+    if df is None or 'CLOSE' not in df.columns or 'VOLUME' not in df.columns or 'DATE' not in df.columns:
+        logger.warning(f'Cannot plot technical analysis for {ticker}')
+        return
+    
+    df_copy = df.copy()
+    
+    # Ensure columns are numeric
+    df_copy['CLOSE'] = pd.to_numeric(df_copy['CLOSE'], errors='coerce')
+    df_copy['VOLUME'] = pd.to_numeric(df_copy['VOLUME'], errors='coerce')
+    df_copy = df_copy.dropna(subset=['CLOSE', 'VOLUME'])
+    
+    df_copy['MA_20'] = df_copy['CLOSE'].rolling(window=20).mean()
+    df_copy['MA_50'] = df_copy['CLOSE'].rolling(window=50).mean()
+    
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1,
+                        subplot_titles=(f'{ticker} Price & Moving Averages', 'Volume'))
+    
+    # Price and moving averages
+    fig.add_trace(go.Scatter(x=df_copy['DATE'], y=df_copy['CLOSE'], name='Close', line=dict(color='black')), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df_copy['DATE'], y=df_copy['MA_20'], name='MA 20', line=dict(color='blue')), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df_copy['DATE'], y=df_copy['MA_50'], name='MA 50', line=dict(color='red')), row=1, col=1)
+    
+    # Volume
+    fig.add_trace(go.Bar(x=df_copy['DATE'], y=df_copy['VOLUME'], name='Volume', marker=dict(color='lightblue')), row=2, col=1)
+    
+    fig.update_layout(title=f'{ticker} Technical Analysis', height=700, hovermode='x unified', template='plotly_white')
+    
+    output_path = f'visualizations/{ticker}_technical_analysis.html'
+    fig.write_html(output_path)
+    logger.info(f'Saved: {output_path}')
+
+def main():
+    """Main execution"""
+    print("\n" + "="*60)
+    print("STOCK DATA DOWNLOADER & VISUALIZER")
+    print("="*60)
+    
+    # Step 1: Download data
+    print("\n[1/2] Downloading stock data...")
+    print("-" * 60)
+    downloaded_files = download_stock_data(TICKERS, start_date='2023-01-01')
+    
+    if not downloaded_files:
+        print("ERROR: No files were downloaded. Please check your internet connection.")
+        return
+    
+    print(f"\n✓ Downloaded {len(downloaded_files)} files")
+    
+    # Step 2: Generate visualizations
+    print("\n[2/2] Generating visualizations...")
+    print("-" * 60)
+    
+    for ticker, csv_path in downloaded_files.items():
+        print(f"\nProcessing {ticker}...")
+        df = load_csv_data(csv_path)
+        
+        if df is not None:
+            plot_price_trend(df, ticker)
+            plot_candlestick(df, ticker)
+            plot_volume(df, ticker)
+            plot_moving_averages(df, ticker, ma_short=20, ma_long=50)
+            plot_technical_analysis(df, ticker)
+    
+    print("\n" + "="*60)
+    print("✓ ALL COMPLETE!")
+    print("="*60)
+    print(f"\n📊 CSV Data saved to: stock_data/")
+    print(f"📈 Visualizations saved to: visualizations/")
+    print("\nOpen the HTML files in 'visualizations/' folder to view interactive charts!")
+    print("="*60 + "\n")
+
+if __name__ == '__main__':
+    main()
