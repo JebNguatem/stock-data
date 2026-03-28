@@ -1,11 +1,6 @@
 """
-Portfolio Optimization Engine
-Implements multiple portfolio optimization strategies:
-- Equal Weight
-- Risk Parity
-- Maximum Sharpe Ratio
-- Minimum Variance
-- Custom Constraints
+Portfolio Evaluation Engine - FIXED VERSION
+Comprehensive analysis of portfolio performance
 """
 
 import pandas as pd
@@ -15,13 +10,13 @@ from plotly.subplots import make_subplots
 import os
 import logging
 from datetime import datetime
-from scipy.optimize import minimize
+from scipy.stats import norm
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-os.makedirs('portfolio_analysis', exist_ok=True)
-os.makedirs('portfolio_reports', exist_ok=True)
+os.makedirs('portfolio_evaluation', exist_ok=True)
+os.makedirs('evaluation_reports', exist_ok=True)
 
 def load_all_csv_data(data_dir='stock_data'):
     """Load all CSV files from stock_data directory"""
@@ -73,331 +68,341 @@ def calculate_returns_and_cov(data_dict):
     
     return returns_df, cov_matrix
 
-def equal_weight_portfolio(tickers):
-    """Equal weight portfolio: 1/n allocation"""
-    n = len(tickers)
-    weights = np.array([1/n] * n)
-    return dict(zip(tickers, weights))
-
-def risk_parity_portfolio(cov_matrix):
+def load_portfolio_weights(returns_df):
     """
-    Risk Parity: Inverse volatility weighting
-    Allocate inversely to volatility (less to volatile stocks)
+    Load or create optimized portfolio weights
+    Using equal weight as example - customize as needed
     """
-    volatilities = np.sqrt(np.diag(cov_matrix))
-    inverse_vol = 1 / volatilities
-    weights = inverse_vol / inverse_vol.sum()
-    
-    return dict(zip(cov_matrix.index, weights))
-
-def portfolio_stats(weights, returns_df, cov_matrix):
-    """Calculate portfolio statistics"""
-    annual_return = np.sum(returns_df.mean() * weights) * 252
-    annual_vol = np.sqrt(np.dot(weights, np.dot(cov_matrix, weights))) * np.sqrt(252)
-    sharpe_ratio = annual_return / annual_vol if annual_vol > 0 else 0
-    
-    return annual_return, annual_vol, sharpe_ratio
-
-def negative_sharpe_ratio(weights, returns_df, cov_matrix):
-    """Negative Sharpe for minimization (scipy minimizes)"""
-    _, _, sharpe = portfolio_stats(weights, returns_df, cov_matrix)
-    return -sharpe
-
-def max_sharpe_portfolio(returns_df, cov_matrix):
-    """Maximum Sharpe Ratio Portfolio (optimal risk-adjusted returns)"""
     n = len(returns_df.columns)
-    initial_weights = np.array([1/n] * n)
+    portfolio_weights = {ticker: 1/n for ticker in returns_df.columns}
+    return portfolio_weights
+
+def calculate_portfolio_returns(weights, returns_df):
+    """Calculate portfolio daily returns"""
+    weights_array = np.array([weights.get(ticker, 0) for ticker in returns_df.columns])
+    portfolio_returns = (returns_df * weights_array).sum(axis=1)
+    return portfolio_returns
+
+def calculate_expected_return(weights, returns_df):
+    """Calculate expected annual return - FIXED"""
+    weights_array = np.array([weights.get(ticker, 0) for ticker in returns_df.columns])
+    daily_return = np.dot(weights_array, returns_df.mean().values)
+    annual_return = daily_return * 252
+    return annual_return
+
+def calculate_portfolio_volatility(weights, cov_matrix, returns_df):
+    """Calculate portfolio annual volatility - FIXED"""
+    weights_array = np.array([weights.get(ticker, 0) for ticker in returns_df.columns])
+    portfolio_variance = np.dot(weights_array, np.dot(cov_matrix.values, weights_array))
+    portfolio_volatility = np.sqrt(portfolio_variance) * np.sqrt(252)
+    return portfolio_volatility
+
+def calculate_sharpe_ratio(expected_return, portfolio_volatility, risk_free_rate=0.02):
+    """Calculate Sharpe ratio"""
+    if portfolio_volatility == 0:
+        return 0
+    sharpe = (expected_return - risk_free_rate) / portfolio_volatility
+    return sharpe
+
+def calculate_sortino_ratio(portfolio_returns, expected_return, risk_free_rate=0.02):
+    """Calculate Sortino ratio (downside risk only)"""
+    excess_returns = portfolio_returns - (risk_free_rate / 252)
+    downside_returns = excess_returns[excess_returns < 0]
     
-    # Constraints: weights sum to 1
-    constraints = {'type': 'eq', 'fun': lambda w: np.sum(w) - 1}
-    
-    # Bounds: weights between 0 and 1 (no short selling)
-    bounds = tuple((0, 1) for _ in range(n))
-    
-    # Optimize
-    result = minimize(
-        negative_sharpe_ratio,
-        initial_weights,
-        args=(returns_df, cov_matrix),
-        method='SLSQP',
-        bounds=bounds,
-        constraints=constraints
-    )
-    
-    if result.success:
-        return dict(zip(returns_df.columns, result.x))
+    if len(downside_returns) == 0:
+        downside_deviation = 0
     else:
-        logger.warning("Max Sharpe optimization failed, returning equal weight")
-        return equal_weight_portfolio(returns_df.columns)
+        downside_deviation = np.sqrt(np.mean(downside_returns ** 2)) * np.sqrt(252)
+    
+    if downside_deviation == 0:
+        return 0
+    sortino = (expected_return - risk_free_rate) / downside_deviation
+    return sortino
 
-def min_variance_portfolio(returns_df, cov_matrix):
-    """Minimum Variance Portfolio (lowest risk)"""
-    n = len(returns_df.columns)
-    initial_weights = np.array([1/n] * n)
-    
-    def portfolio_variance(weights):
-        return np.dot(weights, np.dot(cov_matrix, weights))
-    
-    constraints = {'type': 'eq', 'fun': lambda w: np.sum(w) - 1}
-    bounds = tuple((0, 1) for _ in range(n))
-    
-    result = minimize(
-        portfolio_variance,
-        initial_weights,
-        method='SLSQP',
-        bounds=bounds,
-        constraints=constraints
-    )
-    
-    if result.success:
-        return dict(zip(returns_df.columns, result.x))
-    else:
-        logger.warning("Min Variance optimization failed, returning equal weight")
-        return equal_weight_portfolio(returns_df.columns)
+def calculate_var(portfolio_returns, confidence_level=0.95):
+    """Calculate Value at Risk (VaR)"""
+    return np.percentile(portfolio_returns, (1 - confidence_level) * 100)
 
-def custom_constraints_portfolio(returns_df, cov_matrix, min_weight=0.02, max_weight=0.15):
-    """
-    Portfolio with constraints:
-    - Minimum weight per stock: 2%
-    - Maximum weight per stock: 15%
-    """
-    n = len(returns_df.columns)
-    initial_weights = np.array([1/n] * n)
-    
-    constraints = {'type': 'eq', 'fun': lambda w: np.sum(w) - 1}
-    bounds = tuple((min_weight, max_weight) for _ in range(n))
-    
-    result = minimize(
-        negative_sharpe_ratio,
-        initial_weights,
-        args=(returns_df, cov_matrix),
-        method='SLSQP',
-        bounds=bounds,
-        constraints=constraints
-    )
-    
-    if result.success:
-        return dict(zip(returns_df.columns, result.x))
-    else:
-        logger.warning("Constrained optimization failed, returning equal weight")
-        return equal_weight_portfolio(returns_df.columns)
+def calculate_cvar(portfolio_returns, confidence_level=0.95):
+    """Calculate Conditional Value at Risk (CVaR)"""
+    var = calculate_var(portfolio_returns, confidence_level)
+    return portfolio_returns[portfolio_returns <= var].mean()
 
-def generate_efficient_frontier(returns_df, cov_matrix, num_portfolios=100):
-    """Generate efficient frontier by varying target returns"""
-    n = len(returns_df.columns)
-    target_returns = np.linspace(
-        returns_df.mean().min() * 252 * 0.5,
-        returns_df.mean().max() * 252 * 1.5,
-        num_portfolios
-    )
-    
-    frontier_vols = []
-    frontier_returns = []
-    
-    for target_return in target_returns:
-        def constraint_return(w):
-            return np.sum(returns_df.mean() * w) * 252 - target_return
-        
-        constraints = [
-            {'type': 'eq', 'fun': lambda w: np.sum(w) - 1},
-            {'type': 'eq', 'fun': constraint_return}
-        ]
-        bounds = tuple((0, 1) for _ in range(n))
-        initial_weights = np.array([1/n] * n)
-        
-        def portfolio_variance(weights):
-            return np.dot(weights, np.dot(cov_matrix, weights))
-        
-        result = minimize(
-            portfolio_variance,
-            initial_weights,
-            method='SLSQP',
-            bounds=bounds,
-            constraints=constraints,
-            options={'maxiter': 1000}
-        )
-        
-        if result.success:
-            _, vol, _ = portfolio_stats(result.x, returns_df, cov_matrix)
-            frontier_vols.append(vol)
-            frontier_returns.append(target_return)
-    
-    return np.array(frontier_returns), np.array(frontier_vols)
+def calculate_max_drawdown(portfolio_returns):
+    """Calculate maximum drawdown"""
+    cumulative_returns = (1 + portfolio_returns).cumprod()
+    running_max = cumulative_returns.expanding().max()
+    drawdowns = (cumulative_returns - running_max) / running_max
+    max_drawdown = drawdowns.min()
+    return max_drawdown
 
-def compare_portfolios(portfolios_dict, returns_df, cov_matrix):
-    """Compare multiple portfolio strategies"""
-    comparison = []
-    
-    for strategy_name, weights_dict in portfolios_dict.items():
-        weights = np.array([weights_dict[ticker] for ticker in returns_df.columns])
-        annual_return, annual_vol, sharpe = portfolio_stats(weights, returns_df, cov_matrix)
-        
-        comparison.append({
-            'Strategy': strategy_name,
-            'Annual Return': annual_return,
-            'Annual Volatility': annual_vol,
-            'Sharpe Ratio': sharpe
-        })
-    
-    return pd.DataFrame(comparison)
+def calculate_calmar_ratio(annual_return, max_drawdown):
+    """Calculate Calmar ratio"""
+    if max_drawdown == 0 or abs(max_drawdown) < 0.001:
+        return 0
+    return annual_return / abs(max_drawdown)
 
-def plot_portfolio_allocation(portfolio_dict, strategy_name):
-    """Plot portfolio allocation pie chart"""
-    # Filter out weights < 0.5%
-    filtered = {k: v for k, v in portfolio_dict.items() if v > 0.005}
+def backtest_portfolio(weights, returns_df, initial_investment=100000):
+    """Backtest portfolio"""
+    portfolio_returns = calculate_portfolio_returns(weights, returns_df)
+    cumulative_returns = (1 + portfolio_returns).cumprod()
+    portfolio_values = cumulative_returns * initial_investment
     
-    fig = go.Figure(data=[go.Pie(
-        labels=list(filtered.keys()),
-        values=list(filtered.values()),
-        textposition='auto',
-        textinfo='label+percent',
-        hovertemplate='<b>%{label}</b><br>Weight: %{value:.2%}<extra></extra>'
-    )])
-    
-    fig.update_layout(
-        title=f'{strategy_name} Portfolio Allocation',
-        height=600
-    )
-    
-    output_path = f'portfolio_analysis/{strategy_name.lower().replace(" ", "_")}_allocation.html'
-    fig.write_html(output_path)
-    logger.info(f"Saved: {output_path}")
+    return portfolio_values, portfolio_returns
 
-def plot_efficient_frontier(returns_df, cov_matrix, portfolios_dict):
-    """Plot efficient frontier with portfolio points"""
-    frontier_returns, frontier_vols = generate_efficient_frontier(returns_df, cov_matrix)
+def generate_performance_metrics(weights, returns_df, cov_matrix, portfolio_values, portfolio_returns):
+    """Generate comprehensive performance metrics - FIXED"""
+    
+    expected_return = calculate_expected_return(weights, returns_df)
+    portfolio_volatility = calculate_portfolio_volatility(weights, cov_matrix, returns_df)
+    sharpe = calculate_sharpe_ratio(expected_return, portfolio_volatility)
+    sortino = calculate_sortino_ratio(portfolio_returns, expected_return)
+    
+    var_95 = calculate_var(portfolio_returns, 0.95)
+    cvar_95 = calculate_cvar(portfolio_returns, 0.95)
+    
+    max_dd = calculate_max_drawdown(portfolio_returns)
+    calmar = calculate_calmar_ratio(expected_return, max_dd)
+    
+    cumulative_return = (portfolio_values.iloc[-1] / portfolio_values.iloc[0] - 1)
+    win_rate = (portfolio_returns > 0).sum() / len(portfolio_returns)
+    best_day = portfolio_returns.max()
+    worst_day = portfolio_returns.min()
+    
+    metrics = {
+        'Expected Annual Return': expected_return,
+        'Annual Volatility (Risk)': portfolio_volatility,
+        'Sharpe Ratio': sharpe,
+        'Sortino Ratio': sortino,
+        'Value at Risk (95%)': var_95,
+        'Conditional VaR (95%)': cvar_95,
+        'Maximum Drawdown': max_dd,
+        'Calmar Ratio': calmar,
+        'Cumulative Return': cumulative_return,
+        'Win Rate': win_rate,
+        'Best Day': best_day,
+        'Worst Day': worst_day,
+    }
+    
+    return metrics
+
+def plot_portfolio_performance(portfolio_values, returns_df):
+    """Plot portfolio value over time"""
+    dates = returns_df.index[1:]
     
     fig = go.Figure()
     
-    # Add efficient frontier
     fig.add_trace(go.Scatter(
-        x=frontier_vols,
-        y=frontier_returns,
+        x=dates,
+        y=portfolio_values.values[1:],
         mode='lines',
-        name='Efficient Frontier',
-        line=dict(color='blue', width=3)
+        name='Portfolio Value',
+        line=dict(color='blue', width=2),
+        fill='tozeroy',
+        fillcolor='rgba(0,100,255,0.1)'
     ))
     
-    # Add portfolio points
-    colors = ['red', 'green', 'orange', 'purple', 'brown']
-    for idx, (strategy_name, weights_dict) in enumerate(portfolios_dict.items()):
-        weights = np.array([weights_dict[ticker] for ticker in returns_df.columns])
-        annual_return, annual_vol, sharpe = portfolio_stats(weights, returns_df, cov_matrix)
-        
-        fig.add_trace(go.Scatter(
-            x=[annual_vol],
-            y=[annual_return],
-            mode='markers+text',
-            name=strategy_name,
-            marker=dict(size=12, color=colors[idx % len(colors)]),
-            text=[strategy_name],
-            textposition='top center'
-        ))
-    
     fig.update_layout(
-        title='Efficient Frontier & Portfolio Strategies',
-        xaxis_title='Annual Volatility (Risk)',
-        yaxis_title='Annual Return',
+        title='Portfolio Value Over Time',
+        xaxis_title='Date',
+        yaxis_title='Portfolio Value ($)',
         template='plotly_white',
         height=600,
-        hovermode='closest'
+        hovermode='x unified'
     )
     
-    output_path = 'portfolio_analysis/efficient_frontier.html'
+    output_path = 'portfolio_evaluation/portfolio_value.html'
     fig.write_html(output_path)
     logger.info(f"Saved: {output_path}")
 
-def plot_comparison_bars(comparison_df):
-    """Plot comparison of strategies"""
-    fig = make_subplots(
-        rows=1, cols=3,
-        subplot_titles=('Annual Return', 'Annual Volatility', 'Sharpe Ratio')
-    )
+def plot_cumulative_returns(portfolio_returns):
+    """Plot cumulative returns"""
+    cumulative_returns = (1 + portfolio_returns).cumprod() - 1
     
-    # Return
-    fig.add_trace(
-        go.Bar(x=comparison_df['Strategy'], y=comparison_df['Annual Return'],
-               name='Return', marker_color='green'),
-        row=1, col=1
-    )
+    fig = go.Figure()
     
-    # Volatility
-    fig.add_trace(
-        go.Bar(x=comparison_df['Strategy'], y=comparison_df['Annual Volatility'],
-               name='Volatility', marker_color='red'),
-        row=1, col=2
-    )
-    
-    # Sharpe
-    fig.add_trace(
-        go.Bar(x=comparison_df['Strategy'], y=comparison_df['Sharpe Ratio'],
-               name='Sharpe', marker_color='blue'),
-        row=1, col=3
-    )
+    fig.add_trace(go.Scatter(
+        x=cumulative_returns.index,
+        y=cumulative_returns.values,
+        mode='lines',
+        name='Cumulative Return',
+        line=dict(color='green', width=2)
+    ))
     
     fig.update_layout(
-        title='Portfolio Strategy Comparison',
-        height=500,
-        showlegend=False
+        title='Portfolio Cumulative Returns',
+        xaxis_title='Date',
+        yaxis_title='Cumulative Return',
+        template='plotly_white',
+        height=600,
+        hovermode='x unified',
+        yaxis=dict(tickformat='.0%')
     )
     
-    output_path = 'portfolio_analysis/strategy_comparison.html'
+    output_path = 'portfolio_evaluation/cumulative_returns.html'
     fig.write_html(output_path)
     logger.info(f"Saved: {output_path}")
 
-def generate_portfolio_report(portfolios_dict, comparison_df, returns_df, cov_matrix):
-    """Generate detailed portfolio report"""
+def plot_drawdown(portfolio_values):
+    """Plot drawdown over time"""
+    cumulative_returns = portfolio_values / portfolio_values.iloc[0]
+    running_max = cumulative_returns.expanding().max()
+    drawdown = (cumulative_returns - running_max) / running_max
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=drawdown.index,
+        y=drawdown.values,
+        fill='tozeroy',
+        name='Drawdown',
+        line=dict(color='red', width=1),
+        fillcolor='rgba(255,0,0,0.2)'
+    ))
+    
+    fig.update_layout(
+        title='Portfolio Drawdown Over Time',
+        xaxis_title='Date',
+        yaxis_title='Drawdown',
+        template='plotly_white',
+        height=600,
+        yaxis=dict(tickformat='.0%')
+    )
+    
+    output_path = 'portfolio_evaluation/drawdown.html'
+    fig.write_html(output_path)
+    logger.info(f"Saved: {output_path}")
+
+def plot_returns_distribution(portfolio_returns):
+    """Plot returns distribution"""
+    fig = go.Figure()
+    
+    fig.add_trace(go.Histogram(
+        x=portfolio_returns * 100,
+        nbinsx=50,
+        name='Daily Returns',
+        marker_color='blue'
+    ))
+    
+    fig.update_layout(
+        title='Portfolio Daily Returns Distribution',
+        xaxis_title='Daily Return (%)',
+        yaxis_title='Frequency',
+        template='plotly_white',
+        height=600
+    )
+    
+    output_path = 'portfolio_evaluation/returns_distribution.html'
+    fig.write_html(output_path)
+    logger.info(f"Saved: {output_path}")
+
+def plot_metrics_summary(metrics):
+    """Plot key metrics summary"""
+    key_metrics = {
+        'Expected\nReturn': metrics['Expected Annual Return'] * 100,
+        'Volatility': metrics['Annual Volatility (Risk)'] * 100,
+        'Sharpe\nRatio': metrics['Sharpe Ratio'],
+        'Sortino\nRatio': metrics['Sortino Ratio'],
+        'Calmar\nRatio': metrics['Calmar Ratio'],
+    }
+    
+    fig = go.Figure(data=[
+        go.Bar(
+            x=list(key_metrics.keys()),
+            y=list(key_metrics.values()),
+            text=[f'{v:.2f}' for v in key_metrics.values()],
+            textposition='auto',
+            marker_color=['green', 'red', 'blue', 'purple', 'orange']
+        )
+    ])
+    
+    fig.update_layout(
+        title='Portfolio Performance Metrics Summary',
+        yaxis_title='Value',
+        template='plotly_white',
+        height=600
+    )
+    
+    output_path = 'portfolio_evaluation/metrics_summary.html'
+    fig.write_html(output_path)
+    logger.info(f"Saved: {output_path}")
+
+def generate_evaluation_report(weights, metrics, portfolio_returns):
+    """Generate detailed evaluation report"""
     report = []
     report.append("="*80)
-    report.append("PORTFOLIO OPTIMIZATION REPORT")
+    report.append("PORTFOLIO EVALUATION REPORT")
     report.append("="*80)
     report.append(f"\nGenerated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
     
-    # Summary comparison
+    # Portfolio weights
     report.append("\n" + "="*80)
-    report.append("STRATEGY COMPARISON")
+    report.append("PORTFOLIO ALLOCATION")
     report.append("="*80)
-    report.append(comparison_df.to_string(index=False))
+    sorted_weights = sorted(weights.items(), key=lambda x: x[1], reverse=True)
+    for ticker, weight in sorted_weights:
+        if weight > 0.001:
+            report.append(f"{ticker:10} {weight:>7.2%}")
     
-    # Detailed allocations
-    report.append("\n\n" + "="*80)
-    report.append("DETAILED PORTFOLIO ALLOCATIONS")
-    report.append("="*80)
-    
-    for strategy_name, weights_dict in portfolios_dict.items():
-        report.append(f"\n{strategy_name.upper()}")
-        report.append("-" * 80)
-        
-        # Sort by weight
-        sorted_weights = sorted(weights_dict.items(), key=lambda x: x[1], reverse=True)
-        
-        for ticker, weight in sorted_weights:
-            if weight > 0.001:  # Only show > 0.1%
-                report.append(f"{ticker:10} {weight:>7.2%}")
-        
-        # Calculate metrics
-        weights = np.array([weights_dict[t] for t in returns_df.columns])
-        annual_return, annual_vol, sharpe = portfolio_stats(weights, returns_df, cov_matrix)
-        
-        report.append("-" * 80)
-        report.append(f"Expected Annual Return: {annual_return:>7.2%}")
-        report.append(f"Expected Annual Volatility: {annual_vol:>7.2%}")
-        report.append(f"Sharpe Ratio: {sharpe:>7.4f}")
-    
+    # Performance metrics
     report.append("\n" + "="*80)
-    report.append("RECOMMENDATIONS")
+    report.append("PERFORMANCE METRICS")
     report.append("="*80)
-    report.append("""
-1. MAX SHARPE RATIO: Best risk-adjusted returns. Recommended for most investors.
-2. MINIMUM VARIANCE: Lowest risk. Good for conservative investors.
-3. RISK PARITY: Balanced approach. Suitable for diversified portfolios.
-4. EQUAL WEIGHT: Simple diversification. Easy to implement.
-5. CONSTRAINED: With min/max limits for practical implementation.
-    """)
+    
+    report.append(f"\nRETURN METRICS:")
+    report.append(f"  Expected Annual Return:     {metrics['Expected Annual Return']:>10.2%}")
+    report.append(f"  Cumulative Return:          {metrics['Cumulative Return']:>10.2%}")
+    report.append(f"  Best Day:                   {metrics['Best Day']:>10.2%}")
+    report.append(f"  Worst Day:                  {metrics['Worst Day']:>10.2%}")
+    
+    report.append(f"\nRISK METRICS:")
+    report.append(f"  Annual Volatility (Risk):   {metrics['Annual Volatility (Risk)']:>10.2%}")
+    report.append(f"  Maximum Drawdown:           {metrics['Maximum Drawdown']:>10.2%}")
+    report.append(f"  Value at Risk (95%):        {metrics['Value at Risk (95%)']:>10.2%}")
+    report.append(f"  Conditional VaR (95%):      {metrics['Conditional VaR (95%)']:>10.2%}")
+    
+    report.append(f"\nRISK-ADJUSTED RETURN METRICS:")
+    report.append(f"  Sharpe Ratio:               {metrics['Sharpe Ratio']:>10.4f}")
+    report.append(f"  Sortino Ratio:              {metrics['Sortino Ratio']:>10.4f}")
+    report.append(f"  Calmar Ratio:               {metrics['Calmar Ratio']:>10.4f}")
+    
+    report.append(f"\nOTHER METRICS:")
+    report.append(f"  Win Rate:                   {metrics['Win Rate']:>10.2%}")
+    
+    # Interpretation
+    report.append("\n" + "="*80)
+    report.append("INTERPRETATION & RECOMMENDATIONS")
+    report.append("="*80)
+    
+    report.append(f"\nRETURN ANALYSIS:")
+    report.append(f"  Expected annual return of {metrics['Expected Annual Return']:.2%} means")
+    report.append(f"  a $100,000 portfolio is expected to grow to")
+    report.append(f"  ${100000 * (1 + metrics['Expected Annual Return']):.0f} in one year.")
+    
+    report.append(f"\nRISK ANALYSIS:")
+    report.append(f"  Annual volatility of {metrics['Annual Volatility (Risk)']:.2%} indicates")
+    report.append(f"  typical daily price swings of approximately ±{metrics['Annual Volatility (Risk)'] / np.sqrt(252):.2%}")
+    
+    report.append(f"\n  Maximum historical drawdown: {metrics['Maximum Drawdown']:.2%}")
+    report.append(f"  (worst decline from peak to trough)")
+    
+    report.append(f"\nRISK-ADJUSTED PERFORMANCE:")
+    if metrics['Sharpe Ratio'] > 1:
+        interpretation = "excellent"
+    elif metrics['Sharpe Ratio'] > 0.5:
+        interpretation = "good"
+    else:
+        interpretation = "moderate"
+    
+    report.append(f"  Sharpe Ratio of {metrics['Sharpe Ratio']:.4f} indicates")
+    report.append(f"  {interpretation} risk-adjusted returns.")
+    
+    report.append(f"\nWIN RATE:")
+    report.append(f"  {metrics['Win Rate']:.1%} of trading days were positive.")
     
     report_text = "\n".join(report)
     
-    report_path = 'portfolio_reports/optimization_report.txt'
+    report_path = 'evaluation_reports/evaluation_report.txt'
     with open(report_path, 'w') as f:
         f.write(report_text)
     
@@ -407,11 +412,11 @@ def generate_portfolio_report(portfolios_dict, comparison_df, returns_df, cov_ma
 def main():
     """Main execution"""
     print("\n" + "="*80)
-    print("PORTFOLIO OPTIMIZATION ENGINE")
+    print("PORTFOLIO EVALUATION ENGINE")
     print("="*80)
     
     # Step 1: Load data
-    print("\n[1/5] Loading stock data...")
+    print("\n[1/6] Loading stock data...")
     data_dict = load_all_csv_data('stock_data')
     
     if not data_dict:
@@ -419,54 +424,64 @@ def main():
         return
     
     print(f"✓ Loaded {len(data_dict)} tickers")
-    tickers = sorted(list(data_dict.keys()))
     
     # Step 2: Calculate returns and covariance
-    print("\n[2/5] Calculating returns and covariance matrix...")
+    print("\n[2/6] Calculating returns...")
     returns_df, cov_matrix = calculate_returns_and_cov(data_dict)
-    print(f"✓ Calculated for {len(returns_df.columns)} tickers")
+    print(f"✓ Calculated {len(returns_df)} daily returns")
     
-    # Step 3: Generate portfolios
-    print("\n[3/5] Optimizing portfolios...")
+    # Step 3: Load or create portfolio weights
+    print("\n[3/6] Creating portfolio weights...")
+    weights = load_portfolio_weights(returns_df)
+    print(f"✓ Loaded {len(weights)} positions")
+    print(f"  Total weight: {sum(weights.values()):.1%}")
     
-    portfolios = {
-        'Equal Weight': equal_weight_portfolio(tickers),
-        'Risk Parity': risk_parity_portfolio(cov_matrix),
-        'Max Sharpe Ratio': max_sharpe_portfolio(returns_df, cov_matrix),
-        'Minimum Variance': min_variance_portfolio(returns_df, cov_matrix),
-        'Constrained (2%-15%)': custom_constraints_portfolio(returns_df, cov_matrix)
-    }
+    # Step 4: Backtest portfolio
+    print("\n[4/6] Backtesting portfolio...")
+    portfolio_values, portfolio_returns = backtest_portfolio(weights, returns_df)
+    print(f"✓ Backtest complete ({len(portfolio_returns)} days)")
     
-    print(f"✓ Generated {len(portfolios)} portfolio strategies")
+    # Step 5: Evaluate performance
+    print("\n[5/6] Evaluating portfolio performance...")
+    metrics = generate_performance_metrics(weights, returns_df, cov_matrix, 
+                                          portfolio_values, portfolio_returns)
+    print(f"✓ Performance metrics calculated")
     
-    # Step 4: Compare portfolios
-    print("\n[4/5] Comparing strategies...")
-    comparison = compare_portfolios(portfolios, returns_df, cov_matrix)
-    print(comparison.to_string(index=False))
+    # Step 6: Create visualizations
+    print("\n[6/6] Creating visualizations...")
+    plot_portfolio_performance(portfolio_values, returns_df)
+    plot_cumulative_returns(portfolio_returns)
+    plot_drawdown(portfolio_values)
+    plot_returns_distribution(portfolio_returns)
+    plot_metrics_summary(metrics)
     
-    # Step 5: Create visualizations
-    print("\n[5/5] Creating visualizations...")
-    
-    for strategy_name, weights_dict in portfolios.items():
-        plot_portfolio_allocation(weights_dict, strategy_name)
-    
-    plot_efficient_frontier(returns_df, cov_matrix, portfolios)
-    plot_comparison_bars(comparison)
+    # Display key metrics
+    print("\n" + "="*80)
+    print("KEY PERFORMANCE METRICS")
+    print("="*80)
+    print(f"\nExpected Annual Return:    {metrics['Expected Annual Return']:>10.2%}")
+    print(f"Annual Volatility (Risk):  {metrics['Annual Volatility (Risk)']:>10.2%}")
+    print(f"Sharpe Ratio:              {metrics['Sharpe Ratio']:>10.4f}")
+    print(f"Sortino Ratio:             {metrics['Sortino Ratio']:>10.4f}")
+    print(f"Maximum Drawdown:          {metrics['Maximum Drawdown']:>10.2%}")
+    print(f"Cumulative Return:         {metrics['Cumulative Return']:>10.2%}")
     
     # Generate report
-    report = generate_portfolio_report(portfolios, comparison, returns_df, cov_matrix)
+    report = generate_evaluation_report(weights, metrics, portfolio_returns)
     print("\n" + report)
     
     print("\n" + "="*80)
-    print("✓ PORTFOLIO OPTIMIZATION COMPLETE!")
+    print("✓ PORTFOLIO EVALUATION COMPLETE!")
     print("="*80)
-    print(f"\n📊 Portfolio analysis saved to: portfolio_analysis/")
-    print(f"📄 Reports saved to: portfolio_reports/")
+    print(f"\n📊 Evaluation files saved to: portfolio_evaluation/")
+    print(f"📄 Reports saved to: evaluation_reports/")
     print("\nFiles generated:")
-    print("  • {strategy}_allocation.html (5 pie charts)")
-    print("  • efficient_frontier.html")
-    print("  • strategy_comparison.html")
-    print("  • optimization_report.txt")
+    print("  • portfolio_value.html")
+    print("  • cumulative_returns.html")
+    print("  • drawdown.html")
+    print("  • returns_distribution.html")
+    print("  • metrics_summary.html")
+    print("  • evaluation_report.txt")
     print("="*80 + "\n")
 
 if __name__ == '__main__':
