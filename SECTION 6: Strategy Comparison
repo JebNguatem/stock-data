@@ -591,3 +591,165 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# Output
+================================================================================
+PORTFOLIO STRATEGY COMPARISON ENGINE
+================================================================================
+
+[1/7] Loading stock data...
+�� Loaded 31 tickers
+
+[2/7] Calculating returns and covariance...
+✓ Calculated for 31 tickers
+
+[3/7] Creating equal-weight portfolio...
+✓ Equal weight: 3.23% per stock
+
+[4/7] Creating optimized portfolio (Max Sharpe)...
+✓ Optimized portfolio created
+  Top 3: GLD (20.54%), JNJ (18.26%), WMT (16.49%)
+
+[5/7] Backtesting portfolios...
+✓ Backtest complete (808 days)
+
+[6/7] Calculating performance metrics...
+✓ Metrics calculated
+
+[7/7] Creating visualizations...
+2026-03-27 17:01:26,665 - INFO - Saved: comparison_analysis/value_comparison.html
+2026-03-27 17:01:26,726 - INFO - Saved: comparison_analysis/cumulative_returns_comparison.html
+2026-03-27 17:01:26,796 - INFO - Saved: comparison_analysis/metrics_comparison.html
+2026-03-27 17:01:26,857 - INFO - Saved: comparison_analysis/risk_return_scatter.html
+2026-03-27 17:01:26,926 - INFO - Saved: comparison_analysis/allocation_comparison.html
+2026-03-27 17:01:26,928 - INFO - Saved: comparison_reports/comparison_report.txt
+================================================================================
+PERFORMANCE COMPARISON
+================================================================================
+
+Metric                                 Equal Weight       Optimized
+-----------------------------------------------------------------
+Expected Annual Return                      25.66%         35.94%
+Annual Volatility                           13.60%         10.58%
+Sharpe Ratio                                1.7397         3.2074
+Sortino Ratio                               1.7086         3.2596
+Maximum Drawdown                           -19.88%        -14.77%
+Cumulative Return                          117.86%        208.79%
+
+================================================================================
+PORTFOLIO STRATEGY COMPARISON REPORT
+================================================================================
+
+Generated: 2026-03-27 17:01:26
+
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+Optimized portfolio outperforms equal-weight by:
+  Sharpe Ratio: +1.4677 (+84.4%)
+  Expected Return: +10.28%
+  Volatility: -3.02%
+
+================================================================================
+STRATEGY 1: EQUAL WEIGHT PORTFOLIO
+================================================================================
+
+Allocation: Each stock gets 1/n of the portfolio
+Number of stocks: 31
+Weight per stock: 3.23%
+
+================================================================================
+STRATEGY 2: OPTIMIZED PORTFOLIO (MAX SHARPE RATIO)
+================================================================================
+
+Allocation: Weights optimized for maximum risk-adjusted returns
+
+Top 10 Holdings:
+  GLD         20.54%
+  JNJ         18.26%
+  WMT         16.49%
+  NVDA         9.10%
+  QQQ          9.09%
+  GOOGL        8.18%
+  META         5.59%
+  AMZN         3.80%
+  JPM          3.02%
+  NFLX         2.74%
+
+================================================================================
+PERFORMANCE METRICS COMPARISON
+================================================================================
+
+Metric                                      Equal Weight       Optimized      Difference
+--------------------------------------------------------------------------------
+Expected Annual Return                           25.66%         35.94%        +10.28%
+Annual Volatility                                13.60%         10.58%         -3.02%
+Sharpe Ratio                                      1.7397          3.2074         +1.4677
+Sortino Ratio                                     1.7086          3.2596         +1.5509
+Maximum Drawdown                                -19.88%        -14.77%         +5.11%
+Cumulative Return                               117.86%        208.79%        +90.93%
+Win Rate                                         57.80%         61.39%         +3.59%
+Best Day                                          6.87%          4.71%         -2.16%
+Worst Day                                        -5.17%         -3.36%         +1.81%
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+1. RISK-ADJUSTED RETURNS:
+   Optimized portfolio Sharpe Ratio: 3.2074
+   Equal Weight Sharpe Ratio: 1.7397
+   
+   Interpretation: The optimized portfolio delivers better returns per unit of risk
+   by a factor of 1.84x
+
+2. VOLATILITY MANAGEMENT:
+   Optimized Annual Volatility: 10.58%
+   Equal Weight Annual Volatility: 13.60%
+   
+   Interpretation: Optimized portfolio is lower risk
+
+3. DRAWDOWN PROTECTION:
+   Optimized Maximum Drawdown: -14.77%
+   Equal Weight Maximum Drawdown: -19.88%
+   
+   Interpretation: Optimized portfolio had smaller peak-to-trough losses
+
+4. RETURN GENERATION:
+   Optimized Expected Annual Return: 35.94%
+   Equal Weight Expected Annual Return: 25.66%
+   
+   Interpretation: Over 10 years, $100,000 becomes:
+   - Optimized: $2,155,287
+   - Equal Weight: $981,764
+   - Difference: $1,173,523
+    
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+The OPTIMIZED PORTFOLIO is recommended because:
+✓ Higher Sharpe Ratio (3.2074 vs 1.7397)
+✓ Better risk-adjusted returns
+✓ More strategic allocation based on fundamental metrics
+✓ Concentrates in highest-quality securities
+    
+
+================================================================================
+✓ COMPARISON COMPLETE!
+================================================================================
+
+📊 Analysis files saved to: comparison_analysis/
+📄 Reports saved to: comparison_reports/
+
+Files generated:
+  • value_comparison.html
+  • cumulative_returns_comparison.html
+  • metrics_comparison.html
+  • risk_return_scatter.html
+  • allocation_comparison.html
+  • comparison_report.txt
+================================================================================
