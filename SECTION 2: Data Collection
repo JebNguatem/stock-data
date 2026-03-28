@@ -144,3 +144,212 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# Output
+2026-03-27 16:55:33,496 - INFO - Starting download for 32 tickers
+2026-03-27 16:55:33,497 - INFO - Date range: 2023-01-01 to 2026-03-27
+2026-03-27 16:55:33,512 - INFO - Database initialized: stock_data.db
+2026-03-27 16:55:33,513 - INFO - Downloading AAPL (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:34,179 - INFO - Successfully downloaded 810 records for AAPL
+2026-03-27 16:55:34,195 - INFO - Saved AAPL to CSV: stock_data/AAPL_historical.csv
+2026-03-27 16:55:34,244 - INFO - Saved AAPL to database
+2026-03-27 16:55:35,245 - INFO - Downloading MSFT (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:35,506 - INFO - Successfully downloaded 810 records for MSFT
+2026-03-27 16:55:35,516 - INFO - Saved MSFT to CSV: stock_data/MSFT_historical.csv
+2026-03-27 16:55:35,564 - INFO - Saved MSFT to database
+2026-03-27 16:55:36,566 - INFO - Downloading GOOGL (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:36,759 - INFO - Successfully downloaded 810 records for GOOGL
+2026-03-27 16:55:36,769 - INFO - Saved GOOGL to CSV: stock_data/GOOGL_historical.csv
+2026-03-27 16:55:36,815 - INFO - Saved GOOGL to database
+2026-03-27 16:55:37,816 - INFO - Downloading AMZN (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:38,019 - INFO - Successfully downloaded 810 records for AMZN
+2026-03-27 16:55:38,028 - INFO - Saved AMZN to CSV: stock_data/AMZN_historical.csv
+2026-03-27 16:55:38,075 - INFO - Saved AMZN to database
+2026-03-27 16:55:39,076 - INFO - Downloading NVDA (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:39,321 - INFO - Successfully downloaded 810 records for NVDA
+2026-03-27 16:55:39,330 - INFO - Saved NVDA to CSV: stock_data/NVDA_historical.csv
+2026-03-27 16:55:39,377 - INFO - Saved NVDA to database
+2026-03-27 16:55:40,378 - INFO - Downloading TSLA (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:40,602 - INFO - Successfully downloaded 810 records for TSLA
+2026-03-27 16:55:40,611 - INFO - Saved TSLA to CSV: stock_data/TSLA_historical.csv
+2026-03-27 16:55:40,661 - INFO - Saved TSLA to database
+2026-03-27 16:55:41,662 - INFO - Downloading META (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:41,886 - INFO - Successfully downloaded 810 records for META
+2026-03-27 16:55:41,896 - INFO - Saved META to CSV: stock_data/META_historical.csv
+2026-03-27 16:55:41,946 - INFO - Saved META to database
+2026-03-27 16:55:42,947 - INFO - Downloading BERKB (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:43,348 - ERROR - HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: BERKB"}}}
+2026-03-27 16:55:43,476 - ERROR - 
+1 Failed download:
+2026-03-27 16:55:43,477 - ERROR - ['BERKB']: YFTzMissingError('possibly delisted; no timezone found')
+2026-03-27 16:55:43,481 - WARNING - No data returned for BERKB
+2026-03-27 16:55:44,483 - INFO - Downloading JPM (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:44,766 - INFO - Successfully downloaded 810 records for JPM
+2026-03-27 16:55:44,775 - INFO - Saved JPM to CSV: stock_data/JPM_historical.csv
+2026-03-27 16:55:44,821 - INFO - Saved JPM to database
+2026-03-27 16:55:45,822 - INFO - Downloading JNJ (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:46,196 - INFO - Successfully downloaded 810 records for JNJ
+2026-03-27 16:55:46,206 - INFO - Saved JNJ to CSV: stock_data/JNJ_historical.csv
+2026-03-27 16:55:46,253 - INFO - Saved JNJ to database
+2026-03-27 16:55:47,254 - INFO - Downloading V (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:47,477 - INFO - Successfully downloaded 810 records for V
+2026-03-27 16:55:47,486 - INFO - Saved V to CSV: stock_data/V_historical.csv
+2026-03-27 16:55:47,536 - INFO - Saved V to database
+2026-03-27 16:55:48,538 - INFO - Downloading WMT (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:48,905 - INFO - Successfully downloaded 810 records for WMT
+2026-03-27 16:55:48,914 - INFO - Saved WMT to CSV: stock_data/WMT_historical.csv
+2026-03-27 16:55:48,965 - INFO - Saved WMT to database
+2026-03-27 16:55:49,966 - INFO - Downloading PG (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:50,301 - INFO - Successfully downloaded 810 records for PG
+2026-03-27 16:55:50,311 - INFO - Saved PG to CSV: stock_data/PG_historical.csv
+2026-03-27 16:55:50,360 - INFO - Saved PG to database
+2026-03-27 16:55:51,362 - INFO - Downloading MA (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:51,595 - INFO - Successfully downloaded 810 records for MA
+2026-03-27 16:55:51,604 - INFO - Saved MA to CSV: stock_data/MA_historical.csv
+2026-03-27 16:55:51,653 - INFO - Saved MA to database
+2026-03-27 16:55:52,654 - INFO - Downloading HD (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:52,958 - INFO - Successfully downloaded 810 records for HD
+2026-03-27 16:55:52,968 - INFO - Saved HD to CSV: stock_data/HD_historical.csv
+2026-03-27 16:55:53,017 - INFO - Saved HD to database
+2026-03-27 16:55:54,018 - INFO - Downloading DIS (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:54,382 - INFO - Successfully downloaded 810 records for DIS
+2026-03-27 16:55:54,391 - INFO - Saved DIS to CSV: stock_data/DIS_historical.csv
+2026-03-27 16:55:54,443 - INFO - Saved DIS to database
+2026-03-27 16:55:55,444 - INFO - Downloading PYPL (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:55,627 - INFO - Successfully downloaded 810 records for PYPL
+2026-03-27 16:55:55,636 - INFO - Saved PYPL to CSV: stock_data/PYPL_historical.csv
+2026-03-27 16:55:55,686 - INFO - Saved PYPL to database
+2026-03-27 16:55:56,688 - INFO - Downloading NFLX (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:56,898 - INFO - Successfully downloaded 810 records for NFLX
+2026-03-27 16:55:56,908 - INFO - Saved NFLX to CSV: stock_data/NFLX_historical.csv
+2026-03-27 16:55:56,957 - INFO - Saved NFLX to database
+2026-03-27 16:55:57,958 - INFO - Downloading INTC (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:58,261 - INFO - Successfully downloaded 810 records for INTC
+2026-03-27 16:55:58,270 - INFO - Saved INTC to CSV: stock_data/INTC_historical.csv
+2026-03-27 16:55:58,319 - INFO - Saved INTC to database
+2026-03-27 16:55:59,320 - INFO - Downloading CSCO (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:55:59,539 - INFO - Successfully downloaded 810 records for CSCO
+2026-03-27 16:55:59,549 - INFO - Saved CSCO to CSV: stock_data/CSCO_historical.csv
+2026-03-27 16:55:59,598 - INFO - Saved CSCO to database
+2026-03-27 16:56:00,599 - INFO - Downloading CRM (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:00,842 - INFO - Successfully downloaded 810 records for CRM
+2026-03-27 16:56:00,851 - INFO - Saved CRM to CSV: stock_data/CRM_historical.csv
+2026-03-27 16:56:00,907 - INFO - Saved CRM to database
+2026-03-27 16:56:01,909 - INFO - Downloading ADBE (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:02,131 - INFO - Successfully downloaded 810 records for ADBE
+2026-03-27 16:56:02,140 - INFO - Saved ADBE to CSV: stock_data/ADBE_historical.csv
+2026-03-27 16:56:02,191 - INFO - Saved ADBE to database
+2026-03-27 16:56:03,192 - INFO - Downloading AMD (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:03,381 - INFO - Successfully downloaded 810 records for AMD
+2026-03-27 16:56:03,391 - INFO - Saved AMD to CSV: stock_data/AMD_historical.csv
+2026-03-27 16:56:03,446 - INFO - Saved AMD to database
+2026-03-27 16:56:04,447 - INFO - Downloading MU (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:04,751 - INFO - Successfully downloaded 810 records for MU
+2026-03-27 16:56:04,760 - INFO - Saved MU to CSV: stock_data/MU_historical.csv
+2026-03-27 16:56:04,814 - INFO - Saved MU to database
+2026-03-27 16:56:05,815 - INFO - Downloading QCOM (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:06,060 - INFO - Successfully downloaded 810 records for QCOM
+2026-03-27 16:56:06,070 - INFO - Saved QCOM to CSV: stock_data/QCOM_historical.csv
+2026-03-27 16:56:06,116 - INFO - Saved QCOM to database
+2026-03-27 16:56:07,117 - INFO - Downloading BA (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:07,520 - INFO - Successfully downloaded 810 records for BA
+2026-03-27 16:56:07,530 - INFO - Saved BA to CSV: stock_data/BA_historical.csv
+2026-03-27 16:56:07,580 - INFO - Saved BA to database
+2026-03-27 16:56:08,581 - INFO - Downloading SPY (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:08,915 - INFO - Successfully downloaded 810 records for SPY
+2026-03-27 16:56:08,924 - INFO - Saved SPY to CSV: stock_data/SPY_historical.csv
+2026-03-27 16:56:08,971 - INFO - Saved SPY to database
+2026-03-27 16:56:09,972 - INFO - Downloading QQQ (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:10,326 - INFO - Successfully downloaded 810 records for QQQ
+2026-03-27 16:56:10,335 - INFO - Saved QQQ to CSV: stock_data/QQQ_historical.csv
+2026-03-27 16:56:10,394 - INFO - Saved QQQ to database
+2026-03-27 16:56:11,395 - INFO - Downloading IWM (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:11,649 - INFO - Successfully downloaded 810 records for IWM
+2026-03-27 16:56:11,659 - INFO - Saved IWM to CSV: stock_data/IWM_historical.csv
+2026-03-27 16:56:11,708 - INFO - Saved IWM to database
+2026-03-27 16:56:12,710 - INFO - Downloading EEM (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:12,942 - INFO - Successfully downloaded 810 records for EEM
+2026-03-27 16:56:12,952 - INFO - Saved EEM to CSV: stock_data/EEM_historical.csv
+2026-03-27 16:56:13,000 - INFO - Saved EEM to database
+2026-03-27 16:56:14,001 - INFO - Downloading GLD (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:14,232 - INFO - Successfully downloaded 810 records for GLD
+2026-03-27 16:56:14,242 - INFO - Saved GLD to CSV: stock_data/GLD_historical.csv
+2026-03-27 16:56:14,295 - INFO - Saved GLD to database
+2026-03-27 16:56:15,297 - INFO - Downloading TLT (attempt 1/3)
+/tmp/ipykernel_17/1452979534.py:54: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+2026-03-27 16:56:15,582 - INFO - Successfully downloaded 810 records for TLT
+2026-03-27 16:56:15,592 - INFO - Saved TLT to CSV: stock_data/TLT_historical.csv
+2026-03-27 16:56:15,640 - INFO - Saved TLT to database
+2026-03-27 16:56:16,641 - INFO - 
+============================================================
+2026-03-27 16:56:16,642 - INFO - Download Summary
+2026-03-27 16:56:16,643 - INFO - ============================================================
+2026-03-27 16:56:16,644 - INFO - Successful: 31
+2026-03-27 16:56:16,644 - INFO - Partial Failures: 0
+2026-03-27 16:56:16,645 - INFO - Failed: 1
+2026-03-27 16:56:16,646 - INFO - Total Records: 25110
+2026-03-27 16:56:16,646 - INFO - ============================================================
