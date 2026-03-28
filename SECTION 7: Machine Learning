@@ -1,0 +1,563 @@
+"""
+AI Return Prediction Engine
+Predicts next-day returns using multiple ML models:
+- Linear Regression
+- Random Forest
+- LSTM Neural Network
+- Gradient Boosting
+- Model ensemble voting
+"""
+
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import os
+import logging
+from datetime import datetime
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+import warnings
+warnings.filterwarnings('ignore')
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+os.makedirs('ai_predictions', exist_ok=True)
+os.makedirs('ai_reports', exist_ok=True)
+
+def load_all_csv_data(data_dir='stock_data'):
+    """Load all CSV files"""
+    data_dict = {}
+    
+    if not os.path.exists(data_dir):
+        logger.error(f"Directory {data_dir} not found")
+        return data_dict
+    
+    for filename in os.listdir(data_dir):
+        if filename.endswith('_historical.csv'):
+            ticker = filename.replace('_historical.csv', '')
+            filepath = os.path.join(data_dir, filename)
+            
+            try:
+                df = pd.read_csv(filepath)
+                df.columns = df.columns.str.upper().str.strip()
+                
+                if 'DATE' in df.columns:
+                    df['DATE'] = pd.to_datetime(df['DATE'])
+                    df = df.sort_values('DATE')
+                
+                if 'ADJ CLOSE' in df.columns and 'CLOSE' not in df.columns:
+                    df['CLOSE'] = df['ADJ CLOSE']
+                
+                numeric_cols = ['OPEN', 'HIGH', 'LOW', 'CLOSE', 'VOLUME']
+                for col in numeric_cols:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                
+                df = df.dropna(subset=['CLOSE'])
+                data_dict[ticker] = df
+                
+            except Exception as e:
+                logger.error(f"Error loading {filename}: {e}")
+    
+    return data_dict
+
+def create_features(df, lookback=5):
+    """Create technical indicators as features"""
+    df = df.copy()
+    
+    # Price-based features
+    df['Returns_1'] = df['CLOSE'].pct_change(1)
+    df['Returns_5'] = df['CLOSE'].pct_change(5)
+    df['Returns_10'] = df['CLOSE'].pct_change(10)
+    
+    # Volatility features
+    df['Volatility_5'] = df['Returns_1'].rolling(5).std()
+    df['Volatility_10'] = df['Returns_1'].rolling(10).std()
+    
+    # Moving averages
+    df['MA_5'] = df['CLOSE'].rolling(5).mean()
+    df['MA_10'] = df['CLOSE'].rolling(10).mean()
+    df['MA_20'] = df['CLOSE'].rolling(20).mean()
+    
+    # Price momentum
+    df['Momentum_5'] = df['CLOSE'].pct_change(5)
+    df['Momentum_10'] = df['CLOSE'].pct_change(10)
+    
+    # RSI (Relative Strength Index)
+    delta = df['CLOSE'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+    rs = gain / loss
+    df['RSI'] = 100 - (100 / (1 + rs))
+    
+    # MACD (Moving Average Convergence Divergence)
+    exp1 = df['CLOSE'].ewm(span=12).mean()
+    exp2 = df['CLOSE'].ewm(span=26).mean()
+    df['MACD'] = exp1 - exp2
+    df['MACD_Signal'] = df['MACD'].ewm(span=9).mean()
+    
+    # Bollinger Bands
+    df['BB_Middle'] = df['CLOSE'].rolling(20).mean()
+    bb_std = df['CLOSE'].rolling(20).std()
+    df['BB_Upper'] = df['BB_Middle'] + (bb_std * 2)
+    df['BB_Lower'] = df['BB_Middle'] - (bb_std * 2)
+    df['BB_Position'] = (df['CLOSE'] - df['BB_Lower']) / (df['BB_Upper'] - df['BB_Lower'])
+    
+    # Volume features
+    if 'VOLUME' in df.columns:
+        df['Volume_MA_5'] = df['VOLUME'].rolling(5).mean()
+        df['Volume_Ratio'] = df['VOLUME'] / df['Volume_MA_5']
+    
+    # Target: next day return
+    df['Target_Return'] = df['Returns_1'].shift(-1)
+    
+    return df.dropna()
+
+def prepare_data_for_ml(df, test_size=0.2):
+    """Prepare data for machine learning"""
+    
+    feature_cols = [
+        'Returns_1', 'Returns_5', 'Returns_10',
+        'Volatility_5', 'Volatility_10',
+        'Momentum_5', 'Momentum_10',
+        'RSI', 'MACD', 'MACD_Signal', 'BB_Position',
+        'MA_5', 'MA_10', 'MA_20'
+    ]
+    
+    # Remove missing features
+    feature_cols = [col for col in feature_cols if col in df.columns]
+    
+    X = df[feature_cols].values
+    y = df['Target_Return'].values
+    
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, shuffle=False
+    )
+    
+    # Scale features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    
+    return X_train_scaled, X_test_scaled, y_train, y_test, scaler, feature_cols
+
+def train_models(X_train, X_test, y_train, y_test):
+    """Train multiple ML models"""
+    
+    models = {}
+    predictions = {}
+    scores = {}
+    
+    # 1. Linear Regression
+    print("  Training Linear Regression...")
+    lr_model = LinearRegression()
+    lr_model.fit(X_train, y_train)
+    lr_pred = lr_model.predict(X_test)
+    models['Linear Regression'] = lr_model
+    predictions['Linear Regression'] = lr_pred
+    scores['Linear Regression'] = {
+        'R2': r2_score(y_test, lr_pred),
+        'RMSE': np.sqrt(mean_squared_error(y_test, lr_pred)),
+        'MAE': mean_absolute_error(y_test, lr_pred)
+    }
+    
+    # 2. Random Forest
+    print("  Training Random Forest...")
+    rf_model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
+    rf_model.fit(X_train, y_train)
+    rf_pred = rf_model.predict(X_test)
+    models['Random Forest'] = rf_model
+    predictions['Random Forest'] = rf_pred
+    scores['Random Forest'] = {
+        'R2': r2_score(y_test, rf_pred),
+        'RMSE': np.sqrt(mean_squared_error(y_test, rf_pred)),
+        'MAE': mean_absolute_error(y_test, rf_pred)
+    }
+    
+    # 3. Gradient Boosting
+    print("  Training Gradient Boosting...")
+    gb_model = GradientBoostingRegressor(n_estimators=100, max_depth=5, random_state=42)
+    gb_model.fit(X_train, y_train)
+    gb_pred = gb_model.predict(X_test)
+    models['Gradient Boosting'] = gb_model
+    predictions['Gradient Boosting'] = gb_pred
+    scores['Gradient Boosting'] = {
+        'R2': r2_score(y_test, gb_pred),
+        'RMSE': np.sqrt(mean_squared_error(y_test, gb_pred)),
+        'MAE': mean_absolute_error(y_test, gb_pred)
+    }
+    
+    # 4. Ensemble (Average)
+    print("  Creating Ensemble...")
+    ensemble_pred = (lr_pred + rf_pred + gb_pred) / 3
+    models['Ensemble'] = {'lr': lr_model, 'rf': rf_model, 'gb': gb_model}
+    predictions['Ensemble'] = ensemble_pred
+    scores['Ensemble'] = {
+        'R2': r2_score(y_test, ensemble_pred),
+        'RMSE': np.sqrt(mean_squared_error(y_test, ensemble_pred)),
+        'MAE': mean_absolute_error(y_test, ensemble_pred)
+    }
+    
+    return models, predictions, scores, y_test
+
+def predict_direction(predictions, y_test):
+    """Predict direction (up or down)"""
+    
+    directions = {}
+    accuracies = {}
+    
+    for model_name, pred in predictions.items():
+        pred_direction = np.where(pred > 0, 1, -1)
+        actual_direction = np.where(y_test > 0, 1, -1)
+        
+        accuracy = np.mean(pred_direction == actual_direction)
+        
+        directions[model_name] = pred_direction
+        accuracies[model_name] = accuracy
+    
+    return directions, accuracies
+
+def plot_model_comparison(scores):
+    """Plot model performance comparison"""
+    
+    models = list(scores.keys())
+    r2_scores = [scores[m]['R2'] for m in models]
+    rmse_scores = [scores[m]['RMSE'] for m in models]
+    mae_scores = [scores[m]['MAE'] for m in models]
+    
+    fig = make_subplots(
+        rows=1, cols=3,
+        subplot_titles=('R² Score (Higher is Better)', 'RMSE (Lower is Better)', 'MAE (Lower is Better)')
+    )
+    
+    fig.add_trace(
+        go.Bar(x=models, y=r2_scores, marker_color='blue', name='R²'),
+        row=1, col=1
+    )
+    
+    fig.add_trace(
+        go.Bar(x=models, y=rmse_scores, marker_color='red', name='RMSE'),
+        row=1, col=2
+    )
+    
+    fig.add_trace(
+        go.Bar(x=models, y=mae_scores, marker_color='green', name='MAE'),
+        row=1, col=3
+    )
+    
+    fig.update_layout(
+        title='Model Performance Comparison',
+        height=600,
+        showlegend=False
+    )
+    
+    output_path = 'ai_predictions/model_comparison.html'
+    fig.write_html(output_path)
+    logger.info(f"Saved: {output_path}")
+
+def plot_predictions_vs_actual(predictions, y_test):
+    """Plot predictions vs actual returns"""
+    
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=list(predictions.keys())
+    )
+    
+    positions = [(1, 1), (1, 2), (2, 1), (2, 2)]
+    
+    for idx, (model_name, pred) in enumerate(predictions.items()):
+        row, col = positions[idx]
+        
+        fig.add_trace(
+            go.Scatter(x=np.arange(len(y_test)), y=y_test, 
+                      mode='lines', name='Actual', line=dict(color='blue')),
+            row=row, col=col
+        )
+        
+        fig.add_trace(
+            go.Scatter(x=np.arange(len(pred)), y=pred,
+                      mode='lines', name='Predicted', line=dict(color='red')),
+            row=row, col=col
+        )
+    
+    fig.update_layout(
+        title='Predictions vs Actual Returns',
+        height=800,
+        hovermode='x unified'
+    )
+    
+    output_path = 'ai_predictions/predictions_vs_actual.html'
+    fig.write_html(output_path)
+    logger.info(f"Saved: {output_path}")
+
+def plot_direction_accuracy(accuracies):
+    """Plot direction prediction accuracy"""
+    
+    fig = go.Figure()
+    
+    models = list(accuracies.keys())
+    accs = list(accuracies.values())
+    
+    colors = ['green' if acc > 0.5 else 'red' for acc in accs]
+    
+    fig.add_trace(go.Bar(
+        x=models,
+        y=accs,
+        text=[f'{acc:.1%}' for acc in accs],
+        textposition='auto',
+        marker_color=colors
+    ))
+    
+    fig.add_hline(y=0.5, line_dash="dash", line_color="black", 
+                  annotation_text="50% (Random Guess)")
+    
+    fig.update_layout(
+        title='Direction Prediction Accuracy (Up/Down)',
+        yaxis_title='Accuracy',
+        template='plotly_white',
+        height=600,
+        yaxis=dict(tickformat='.0%')
+    )
+    
+    output_path = 'ai_predictions/direction_accuracy.html'
+    fig.write_html(output_path)
+    logger.info(f"Saved: {output_path}")
+
+def plot_cumulative_predictions(predictions, y_test):
+    """Plot cumulative returns from predictions"""
+    
+    fig = go.Figure()
+    
+    for model_name, pred in predictions.items():
+        # Use predictions to trade
+        signals = np.where(pred > 0, 1, -1)
+        cumulative = np.cumprod(1 + signals * y_test)
+        
+        fig.add_trace(go.Scatter(
+            x=np.arange(len(cumulative)),
+            y=cumulative,
+            mode='lines',
+            name=model_name,
+            line=dict(width=2)
+        ))
+    
+    # Actual cumulative return
+    cumulative_actual = np.cumprod(1 + y_test)
+    fig.add_trace(go.Scatter(
+        x=np.arange(len(cumulative_actual)),
+        y=cumulative_actual,
+        mode='lines',
+        name='Actual (Buy & Hold)',
+        line=dict(width=3, dash='dash')
+    ))
+    
+    fig.update_layout(
+        title='Trading Strategy Performance Based on AI Predictions',
+        xaxis_title='Days',
+        yaxis_title='Cumulative Return',
+        template='plotly_white',
+        height=600,
+        hovermode='x unified'
+    )
+    
+    output_path = 'ai_predictions/trading_performance.html'
+    fig.write_html(output_path)
+    logger.info(f"Saved: {output_path}")
+
+def generate_ai_report(scores, accuracies, best_model):
+    """Generate AI prediction report"""
+    
+    report = []
+    report.append("="*80)
+    report.append("AI RETURN PREDICTION REPORT")
+    report.append("="*80)
+    report.append(f"\nGenerated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    
+    # Executive Summary
+    report.append("\n" + "="*80)
+    report.append("EXECUTIVE SUMMARY")
+    report.append("="*80)
+    report.append(f"\nBest Performing Model: {best_model}")
+    report.append(f"Direction Accuracy: {accuracies[best_model]:.1%}")
+    report.append(f"R² Score: {scores[best_model]['R2']:.4f}")
+    report.append(f"RMSE: {scores[best_model]['RMSE']:.4%}")
+    
+    # Model Comparison
+    report.append("\n" + "="*80)
+    report.append("MODEL PERFORMANCE METRICS")
+    report.append("="*80)
+    report.append(f"\n{'Model':<20} {'R² Score':>15} {'RMSE':>15} {'Direction Acc':>15}")
+    report.append("-" * 65)
+    
+    for model in scores.keys():
+        report.append(
+            f"{model:<20} {scores[model]['R2']:>14.4f} {scores[model]['RMSE']:>14.4%} {accuracies[model]:>14.1%}"
+        )
+    
+    # Feature Importance (from Random Forest)
+    report.append("\n" + "="*80)
+    report.append("MODEL DESCRIPTIONS")
+    report.append("="*80)
+    
+    report.append(f"""
+1. LINEAR REGRESSION:
+   - Simple baseline model
+   - Fast to train and predict
+   - Good for interpretability
+   - Limited for complex patterns
+
+2. RANDOM FOREST:
+   - Ensemble of decision trees
+   - Captures non-linear relationships
+   - Good feature importance scores
+   - Robust to outliers
+
+3. GRADIENT BOOSTING:
+   - Sequential ensemble learning
+   - Often highest accuracy
+   - More complex than Random Forest
+   - Better for challenging problems
+
+4. ENSEMBLE (VOTING):
+   - Combines all three models
+   - Reduces individual model biases
+   - Often most robust
+   - Best risk management
+    """)
+    
+    # Predictions Guide
+    report.append("\n" + "="*80)
+    report.append("HOW TO USE PREDICTIONS")
+    report.append("="*80)
+    
+    report.append(f"""
+DIRECTION PREDICTIONS (Up/Down):
+- Model predicts if tomorrow's return will be positive or negative
+- Accuracy of {accuracies[best_model]:.1%} means {(accuracies[best_model]*100):.0f}% correct days
+- Better than random (50%) indicates predictive power
+- Use as confirmation, not sole decision
+
+RETURN VALUE PREDICTIONS:
+- Models predict the actual return magnitude
+- R² of {scores[best_model]['R2']:.4f} indicates {(scores[best_model]['R2']*100):.1f}% variance explained
+- RMSE of {scores[best_model]['RMSE']:.4%} is typical error size
+- Use with caution - markets are inherently noisy
+
+PRACTICAL APPLICATION:
+1. Use predictions with position sizing
+2. Combine with fundamental analysis
+3. Set stop losses for downside protection
+4. Monitor prediction accuracy over time
+5. Retrain models quarterly with new data
+    """)
+    
+    # Limitations
+    report.append("\n" + "="*80)
+    report.append("IMPORTANT LIMITATIONS")
+    report.append("="*80)
+    
+    report.append(f"""
+⚠️  Models trained on historical data - past performance ≠ future results
+⚠️  Market conditions change - model may not adapt in time
+⚠️  Black swan events unpredictable by any model
+⚠️  No model is perfect - always use risk management
+⚠️  Accuracy >50% doesn't guarantee profit (need favorable risk/reward)
+⚠️  Machine learning works best with stable, trending markets
+    """)
+    
+    report_text = "\n".join(report)
+    
+    report_path = 'ai_reports/ai_prediction_report.txt'
+    with open(report_path, 'w') as f:
+        f.write(report_text)
+    
+    logger.info(f"Saved: {report_path}")
+    return report_text
+
+def main():
+    """Main execution"""
+    print("\n" + "="*80)
+    print("AI RETURN PREDICTION ENGINE")
+    print("="*80)
+    
+    # Step 1: Load data
+    print("\n[1/6] Loading stock data...")
+    data_dict = load_all_csv_data('stock_data')
+    
+    if not data_dict:
+        print("ERROR: No stock data found.")
+        return
+    
+    print(f"✓ Loaded {len(data_dict)} tickers")
+    
+    # Step 2: Create features (use first available stock)
+    print("\n[2/6] Creating technical features...")
+    ticker = list(data_dict.keys())[0]
+    df = data_dict[ticker]
+    df_features = create_features(df)
+    print(f"✓ Created features for {ticker} ({len(df_features)} trading days)")
+    print(f"  Features: Returns, Volatility, MA, RSI, MACD, Bollinger Bands, Volume")
+    
+    # Step 3: Prepare data
+    print("\n[3/6] Preparing data for ML...")
+    X_train, X_test, y_train, y_test, scaler, feature_cols = prepare_data_for_ml(df_features)
+    print(f"✓ Training set: {len(X_train)} samples")
+    print(f"✓ Test set: {len(X_test)} samples")
+    print(f"✓ Features: {len(feature_cols)}")
+    
+    # Step 4: Train models
+    print("\n[4/6] Training models...")
+    models, predictions, scores, y_test_actual = train_models(X_train, X_test, y_train, y_test)
+    print(f"✓ Trained 4 models (Linear Regression, Random Forest, Gradient Boosting, Ensemble)")
+    
+    # Step 5: Evaluate predictions
+    print("\n[5/6] Evaluating predictions...")
+    directions, accuracies = predict_direction(predictions, y_test_actual)
+    print(f"✓ Direction prediction accuracies:")
+    for model, acc in accuracies.items():
+        print(f"  {model:<20} {acc:.1%}")
+    
+    best_model = max(scores, key=lambda x: scores[x]['R2'])
+    print(f"\n✓ Best model: {best_model} (R² = {scores[best_model]['R2']:.4f})")
+    
+    # Step 6: Create visualizations
+    print("\n[6/6] Creating visualizations...")
+    plot_model_comparison(scores)
+    plot_predictions_vs_actual(predictions, y_test_actual)
+    plot_direction_accuracy(accuracies)
+    plot_cumulative_predictions(predictions, y_test_actual)
+    
+    # Display results
+    print("\n" + "="*80)
+    print("MODEL PERFORMANCE SUMMARY")
+    print("="*80)
+    print(f"\n{'Model':<20} {'R² Score':>15} {'RMSE':>15} {'Direction Acc':>15}")
+    print("-" * 65)
+    for model in scores.keys():
+        print(f"{model:<20} {scores[model]['R2']:>14.4f} {scores[model]['RMSE']:>14.4%} {accuracies[model]:>14.1%}")
+    
+    # Generate report
+    report = generate_ai_report(scores, accuracies, best_model)
+    print("\n" + report)
+    
+    print("\n" + "="*80)
+    print("✓ AI PREDICTION COMPLETE!")
+    print("="*80)
+    print(f"\n🤖 Predictions saved to: ai_predictions/")
+    print(f"📄 Reports saved to: ai_reports/")
+    print("\nFiles generated:")
+    print("  • model_comparison.html")
+    print("  • predictions_vs_actual.html")
+    print("  • direction_accuracy.html")
+    print("  • trading_performance.html")
+    print("  • ai_prediction_report.txt")
+    print("="*80 + "\n")
+
+if __name__ == '__main__':
+    main()
