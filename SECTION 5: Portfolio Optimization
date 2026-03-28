@@ -486,3 +486,284 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# Output
+2026-03-27 16:56:31,277 - INFO - Loaded MU: 810 records
+2026-03-27 16:56:31,286 - INFO - Loaded AMD: 810 records
+2026-03-27 16:56:31,296 - INFO - Loaded META: 810 records
+2026-03-27 16:56:31,305 - INFO - Loaded ADBE: 810 records
+2026-03-27 16:56:31,317 - INFO - Loaded TSLA: 810 records
+2026-03-27 16:56:31,326 - INFO - Loaded PYPL: 810 records
+2026-03-27 16:56:31,336 - INFO - Loaded NVDA: 810 records
+2026-03-27 16:56:31,345 - INFO - Loaded QCOM: 810 records
+2026-03-27 16:56:31,354 - INFO - Loaded TLT: 810 records
+2026-03-27 16:56:31,363 - INFO - Loaded HD: 810 records
+2026-03-27 16:56:31,373 - INFO - Loaded BA: 810 records
+2026-03-27 16:56:31,382 - INFO - Loaded JPM: 810 records
+2026-03-27 16:56:31,391 - INFO - Loaded CSCO: 810 records
+2026-03-27 16:56:31,401 - INFO - Loaded INTC: 810 records
+2026-03-27 16:56:31,410 - INFO - Loaded CRM: 810 records
+2026-03-27 16:56:31,420 - INFO - Loaded PG: 810 records
+2026-03-27 16:56:31,430 - INFO - Loaded EEM: 810 records
+2026-03-27 16:56:31,442 - INFO - Loaded AAPL: 810 records
+2026-03-27 16:56:31,451 - INFO - Loaded NFLX: 810 records
+2026-03-27 16:56:31,460 - INFO - Loaded V: 810 records
+================================================================================
+PORTFOLIO OPTIMIZATION ENGINE
+================================================================================
+
+[1/5] Loading stock data...
+2026-03-27 16:56:31,472 - INFO - Loaded AMZN: 810 records
+2026-03-27 16:56:31,484 - INFO - Loaded MSFT: 810 records
+2026-03-27 16:56:31,495 - INFO - Loaded SPY: 810 records
+2026-03-27 16:56:31,505 - INFO - Loaded JNJ: 810 records
+2026-03-27 16:56:31,516 - INFO - Loaded GLD: 810 records
+2026-03-27 16:56:31,529 - INFO - Loaded GOOGL: 810 records
+2026-03-27 16:56:31,539 - INFO - Loaded MA: 810 records
+2026-03-27 16:56:31,549 - INFO - Loaded DIS: 810 records
+2026-03-27 16:56:31,559 - INFO - Loaded WMT: 810 records
+2026-03-27 16:56:31,569 - INFO - Loaded IWM: 810 records
+2026-03-27 16:56:31,580 - INFO - Loaded QQQ: 810 records
+✓ Loaded 31 tickers
+
+[2/5] Calculating returns and covariance matrix...
+✓ Calculated for 31 tickers
+
+[3/5] Optimizing portfolios...
+2026-03-27 16:56:32,458 - INFO - Saved: portfolio_analysis/equal_weight_allocation.html
+2026-03-27 16:56:32,512 - INFO - Saved: portfolio_analysis/risk_parity_allocation.html
+2026-03-27 16:56:32,559 - INFO - Saved: portfolio_analysis/max_sharpe_ratio_allocation.html
+✓ Generated 5 portfolio strategies
+
+[4/5] Comparing strategies...
+            Strategy  Annual Return  Annual Volatility  Sharpe Ratio
+        Equal Weight       0.256611           0.136005      1.886777
+         Risk Parity       0.212840           0.110908      1.919063
+    Max Sharpe Ratio       0.359410           0.105820      3.396442
+    Minimum Variance       0.256611           0.136005      1.886777
+Constrained (2%-15%)       0.312805           0.121779      2.568627
+
+[5/5] Creating visualizations...
+2026-03-27 16:56:32,602 - INFO - Saved: portfolio_analysis/minimum_variance_allocation.html
+2026-03-27 16:56:32,644 - INFO - Saved: portfolio_analysis/constrained_(2%-15%)_allocation.html
+2026-03-27 17:01:24,059 - INFO - Saved: portfolio_analysis/efficient_frontier.html
+2026-03-27 17:01:24,125 - INFO - Saved: portfolio_analysis/strategy_comparison.html
+2026-03-27 17:01:24,132 - INFO - Saved: portfolio_reports/optimization_report.txt
+================================================================================
+PORTFOLIO OPTIMIZATION REPORT
+================================================================================
+
+Generated: 2026-03-27 17:01:24
+
+
+================================================================================
+STRATEGY COMPARISON
+================================================================================
+            Strategy  Annual Return  Annual Volatility  Sharpe Ratio
+        Equal Weight       0.256611           0.136005      1.886777
+         Risk Parity       0.212840           0.110908      1.919063
+    Max Sharpe Ratio       0.359410           0.105820      3.396442
+    Minimum Variance       0.256611           0.136005      1.886777
+Constrained (2%-15%)       0.312805           0.121779      2.568627
+
+
+================================================================================
+DETAILED PORTFOLIO ALLOCATIONS
+================================================================================
+
+EQUAL WEIGHT
+--------------------------------------------------------------------------------
+AAPL         3.23%
+ADBE         3.23%
+AMD          3.23%
+AMZN         3.23%
+BA           3.23%
+CRM          3.23%
+CSCO         3.23%
+DIS          3.23%
+EEM          3.23%
+GLD          3.23%
+GOOGL        3.23%
+HD           3.23%
+INTC         3.23%
+IWM          3.23%
+JNJ          3.23%
+JPM          3.23%
+MA           3.23%
+META         3.23%
+MSFT         3.23%
+MU           3.23%
+NFLX         3.23%
+NVDA         3.23%
+PG           3.23%
+PYPL         3.23%
+QCOM         3.23%
+QQQ          3.23%
+SPY          3.23%
+TLT          3.23%
+TSLA         3.23%
+V            3.23%
+WMT          3.23%
+--------------------------------------------------------------------------------
+Expected Annual Return:  25.66%
+Expected Annual Volatility:  13.60%
+Sharpe Ratio:  1.8868
+
+RISK PARITY
+--------------------------------------------------------------------------------
+TLT          5.55%
+SPY          5.38%
+PG           4.88%
+EEM          4.82%
+JNJ          4.76%
+V            4.31%
+GLD          4.28%
+MA           4.21%
+QQQ          4.13%
+WMT          4.01%
+IWM          3.87%
+HD           3.73%
+CSCO         3.69%
+JPM          3.52%
+MSFT         3.41%
+AAPL         3.20%
+DIS          2.97%
+GOOGL        2.74%
+AMZN         2.57%
+BA           2.47%
+CRM          2.44%
+ADBE         2.43%
+NFLX         2.38%
+QCOM         2.28%
+PYPL         2.17%
+META         2.15%
+NVDA         1.66%
+MU           1.55%
+AMD          1.54%
+INTC         1.50%
+TSLA         1.40%
+--------------------------------------------------------------------------------
+Expected Annual Return:  21.28%
+Expected Annual Volatility:  11.09%
+Sharpe Ratio:  1.9191
+
+MAX SHARPE RATIO
+--------------------------------------------------------------------------------
+GLD         20.54%
+JNJ         18.26%
+WMT         16.49%
+NVDA         9.10%
+QQQ          9.09%
+GOOGL        8.18%
+META         5.59%
+AMZN         3.80%
+JPM          3.02%
+NFLX         2.74%
+SPY          1.42%
+MU           1.25%
+TSLA         0.52%
+--------------------------------------------------------------------------------
+Expected Annual Return:  35.94%
+Expected Annual Volatility:  10.58%
+Sharpe Ratio:  3.3964
+
+MINIMUM VARIANCE
+--------------------------------------------------------------------------------
+MU           3.23%
+AMD          3.23%
+META         3.23%
+ADBE         3.23%
+TSLA         3.23%
+PYPL         3.23%
+NVDA         3.23%
+QCOM         3.23%
+TLT          3.23%
+HD           3.23%
+BA           3.23%
+JPM          3.23%
+CSCO         3.23%
+INTC         3.23%
+CRM          3.23%
+PG           3.23%
+EEM          3.23%
+AAPL         3.23%
+NFLX         3.23%
+V            3.23%
+AMZN         3.23%
+MSFT         3.23%
+SPY          3.23%
+JNJ          3.23%
+GLD          3.23%
+GOOGL        3.23%
+MA           3.23%
+DIS          3.23%
+WMT          3.23%
+IWM          3.23%
+QQQ          3.23%
+--------------------------------------------------------------------------------
+Expected Annual Return:  25.66%
+Expected Annual Volatility:  13.60%
+Sharpe Ratio:  1.8868
+
+CONSTRAINED (2%-15%)
+--------------------------------------------------------------------------------
+GLD         15.00%
+WMT         12.23%
+GOOGL       10.13%
+NVDA         7.10%
+JNJ          3.54%
+SPY          2.00%
+QQQ          2.00%
+AAPL         2.00%
+AMZN         2.00%
+META         2.00%
+PG           2.00%
+JPM          2.00%
+NFLX         2.00%
+TLT          2.00%
+CSCO         2.00%
+MSFT         2.00%
+V            2.00%
+MA           2.00%
+MU           2.00%
+AMD          2.00%
+ADBE         2.00%
+TSLA         2.00%
+PYPL         2.00%
+QCOM         2.00%
+HD           2.00%
+BA           2.00%
+INTC         2.00%
+CRM          2.00%
+EEM          2.00%
+DIS          2.00%
+IWM          2.00%
+--------------------------------------------------------------------------------
+Expected Annual Return:  31.28%
+Expected Annual Volatility:  12.18%
+Sharpe Ratio:  2.5686
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+1. MAX SHARPE RATIO: Best risk-adjusted returns. Recommended for most investors.
+2. MINIMUM VARIANCE: Lowest risk. Good for conservative investors.
+3. RISK PARITY: Balanced approach. Suitable for diversified portfolios.
+4. EQUAL WEIGHT: Simple diversification. Easy to implement.
+5. CONSTRAINED: With min/max limits for practical implementation.
+    
+
+================================================================================
+✓ PORTFOLIO OPTIMIZATION COMPLETE!
+================================================================================
+
+📊 Portfolio analysis saved to: portfolio_analysis/
+📄 Reports saved to: portfolio_reports/
+
+Files generated:
+  • {strategy}_allocation.html (5 pie charts)
+  • efficient_frontier.html
+  • strategy_comparison.html
+  • optimization_report.txt
+================================================================================
