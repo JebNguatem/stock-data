@@ -561,3 +561,160 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# Output
+================================================================================
+AI RETURN PREDICTION ENGINE
+================================================================================
+
+[1/6] Loading stock data...
+✓ Loaded 31 tickers
+
+[2/6] Creating technical features...
+✓ Created features for MU (790 trading days)
+  Features: Returns, Volatility, MA, RSI, MACD, Bollinger Bands, Volume
+
+[3/6] Preparing data for ML...
+✓ Training set: 632 samples
+✓ Test set: 158 samples
+✓ Features: 14
+
+[4/6] Training models...
+  Training Linear Regression...
+  Training Random Forest...
+  Training Gradient Boosting...
+2026-03-27 17:01:30,220 - INFO - Saved: ai_predictions/model_comparison.html
+2026-03-27 17:01:30,287 - INFO - Saved: ai_predictions/predictions_vs_actual.html
+2026-03-27 17:01:30,353 - INFO - Saved: ai_predictions/direction_accuracy.html
+  Creating Ensemble...
+✓ Trained 4 models (Linear Regression, Random Forest, Gradient Boosting, Ensemble)
+
+[5/6] Evaluating predictions...
+✓ Direction prediction accuracies:
+  Linear Regression    44.9%
+  Random Forest        45.6%
+  Gradient Boosting    44.9%
+  Ensemble             46.2%
+
+✓ Best model: Random Forest (R² = -0.4321)
+
+[6/6] Creating visualizations...
+2026-03-27 17:01:30,416 - INFO - Saved: ai_predictions/trading_performance.html
+2026-03-27 17:01:30,418 - INFO - Saved: ai_reports/ai_prediction_report.txt
+================================================================================
+MODEL PERFORMANCE SUMMARY
+================================================================================
+
+Model                       R² Score            RMSE   Direction Acc
+-----------------------------------------------------------------
+Linear Regression           -0.4488        4.8693%          44.9%
+Random Forest               -0.4321        4.8413%          45.6%
+Gradient Boosting           -2.5072        7.5761%          44.9%
+Ensemble                    -0.8720        5.5351%          46.2%
+
+================================================================================
+AI RETURN PREDICTION REPORT
+================================================================================
+
+Generated: 2026-03-27 17:01:30
+
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+Best Performing Model: Random Forest
+Direction Accuracy: 45.6%
+R² Score: -0.4321
+RMSE: 4.8413%
+
+================================================================================
+MODEL PERFORMANCE METRICS
+================================================================================
+
+Model                       R² Score            RMSE   Direction Acc
+-----------------------------------------------------------------
+Linear Regression           -0.4488        4.8693%          44.9%
+Random Forest               -0.4321        4.8413%          45.6%
+Gradient Boosting           -2.5072        7.5761%          44.9%
+Ensemble                    -0.8720        5.5351%          46.2%
+
+================================================================================
+MODEL DESCRIPTIONS
+================================================================================
+
+1. LINEAR REGRESSION:
+   - Simple baseline model
+   - Fast to train and predict
+   - Good for interpretability
+   - Limited for complex patterns
+
+2. RANDOM FOREST:
+   - Ensemble of decision trees
+   - Captures non-linear relationships
+   - Good feature importance scores
+   - Robust to outliers
+
+3. GRADIENT BOOSTING:
+   - Sequential ensemble learning
+   - Often highest accuracy
+   - More complex than Random Forest
+   - Better for challenging problems
+
+4. ENSEMBLE (VOTING):
+   - Combines all three models
+   - Reduces individual model biases
+   - Often most robust
+   - Best risk management
+    
+
+================================================================================
+HOW TO USE PREDICTIONS
+================================================================================
+
+DIRECTION PREDICTIONS (Up/Down):
+- Model predicts if tomorrow's return will be positive or negative
+- Accuracy of 45.6% means 46% correct days
+- Better than random (50%) indicates predictive power
+- Use as confirmation, not sole decision
+
+RETURN VALUE PREDICTIONS:
+- Models predict the actual return magnitude
+- R² of -0.4321 indicates -43.2% variance explained
+- RMSE of 4.8413% is typical error size
+- Use with caution - markets are inherently noisy
+
+PRACTICAL APPLICATION:
+1. Use predictions with position sizing
+2. Combine with fundamental analysis
+3. Set stop losses for downside protection
+4. Monitor prediction accuracy over time
+5. Retrain models quarterly with new data
+    
+
+================================================================================
+IMPORTANT LIMITATIONS
+================================================================================
+
+⚠️  Models trained on historical data - past performance ≠ future results
+⚠️  Market conditions change - model may not adapt in time
+⚠️  Black swan events unpredictable by any model
+⚠️  No model is perfect - always use risk management
+⚠️  Accuracy >50% doesn't guarantee profit (need favorable risk/reward)
+⚠️  Machine learning works best with stable, trending markets
+    
+
+================================================================================
+✓ AI PREDICTION COMPLETE!
+================================================================================
+
+🤖 Predictions saved to: ai_predictions/
+📄 Reports saved to: ai_reports/
+
+Files generated:
+  • model_comparison.html
+  • predictions_vs_actual.html
+  • direction_accuracy.html
+  • trading_performance.html
+  • ai_prediction_report.txt
+================================================================================
