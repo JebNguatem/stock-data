@@ -1,0 +1,122 @@
+================================================================================
+STRATEGIC INVESTMENT INSIGHTS REPORT
+================================================================================
+
+Generated: 2026-03-27 17:01:30
+
+
+This report synthesizes all quantitative analysis, portfolio optimization, 
+AI predictions, and comparative testing to extract 5 actionable insights
+that separate winning portfolios from mediocre ones.
+    
+
+================================================================================
+INSIGHT 1: Risk-Adjusted Return Champions vs Laggards
+================================================================================
+
+Which stocks deliver the best risk-adjusted returns?
+
+
+✓ NVDA - CHAMPION
+  • Sharpe Ratio: 1.7716 (best risk-adjusted returns)
+  • Annual Return: 89.43%
+  • Volatility: 49.35%
+  • Sortino Ratio: 1.9314 (downside protection)
+  • Win Rate: 54.9% of days profitable
+  
+  WHY: NVDA achieves high returns with below-average risk.
+  This is the holy grail of investing: more return, less risk.
+        
+
+✓ WMT - CHAMPION
+  • Sharpe Ratio: 1.4943 (best risk-adjusted returns)
+  • Annual Return: 32.48%
+  • Volatility: 20.40%
+  • Sortino Ratio: 1.5528 (downside protection)
+  • Win Rate: 54.9% of days profitable
+  
+  WHY: WMT achieves high returns with below-average risk.
+  This is the holy grail of investing: more return, less risk.
+        
+
+✓ MU - CHAMPION
+  • Sharpe Ratio: 1.3836 (best risk-adjusted returns)
+  • Annual Return: 75.43%
+  • Volatility: 53.07%
+  • Sortino Ratio: 1.4818 (downside protection)
+  • Win Rate: 52.2% of days profitable
+  
+  WHY: MU achieves high returns with below-average risk.
+  This is the holy grail of investing: more return, less risk.
+        
+
+================================================================================
+
+
+✗ TLT - LAGGARD
+  • Sharpe Ratio: -0.1441 (poor risk-adjusted returns)
+  • Annual Return: -0.13%
+  • Volatility: 14.75%
+  • Sortino Ratio: -0.1419
+  • Max Drawdown: -22.44%
+  
+  WHY: TLT offers low returns with high risk - avoid.
+  Better alternatives exist in the portfolio.
+        
+
+✗ ADBE - LAGGARD
+  • Sharpe Ratio: -0.1997 (poor risk-adjusted returns)
+  • Annual Return: -4.72%
+  • Volatility: 33.63%
+  • Sortino Ratio: -0.1854
+  • Max Drawdown: -62.62%
+  
+  WHY: ADBE offers low returns with high risk - avoid.
+  Better alternatives exist in the portfolio.
+        
+
+✗ PYPL - LAGGARD
+  • Sharpe Ratio: -0.2698 (poor risk-adjusted returns)
+  • Annual Return: -8.16%
+  • Volatility: 37.66%
+  • Sortino Ratio: -0.2398
+  • Max Drawdown: -57.34%
+  
+  WHY: PYPL offers low returns with high risk - avoid.
+  Better alternatives exist in the portfolio.
+        
+
+
+ACTION:
+1. OVERWEIGHT: NVDA (best Sharpe ratio)
+2. AVOID: TLT (worst risk-adjusted returns)
+3. REBALANCE: Replace bottom 3 performers with top 3 performers
+    
+
+
+================================================================================
+INSIGHT 2: Redundant Exposure vs True Diversifiers
+================================================================================
+
+Which assets provide redundant exposure? Which truly diversify?
+
+REDUNDANT PAIRS (High Correlation - Avoid Together):
+
+
+⚠️  SPY <-> QQQ: 0.9486
+   These assets move together - owning both doubles risk without benefit.
+   Why: Both are broad market/sector assets
+   Recommendation: Choose ONE, not both
+        
+
+⚠️  V <-> MA: 0.8527
+   These assets move together - owning both doubles risk without benefit.
+   Why: Both are financial/consumer assets
+   Recommendation: Choose ONE, not both
+        
+
+⚠️  AMZN <-> QQQ: 0.7314
+   These assets move together - owning both doubles risk without benefit.
+   Why: Both are broad market/sector assets
+   Recommendation: Choose ONE, not both
+        
